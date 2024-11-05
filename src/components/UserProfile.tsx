@@ -35,7 +35,7 @@ const UserProfile = () => {
           <Button
             variant="outline"
             size="sm"
-            className="flex items-center gap-2 bg-white/80 backdrop-blur-sm shadow-sm hover:bg-white/90"
+            className="flex items-center gap-2 bg-white/80 backdrop-blur-sm shadow-sm hover:bg-secondary/20 transition-colors"
             onClick={handleLogout}
             type="button"
           >
@@ -48,7 +48,7 @@ const UserProfile = () => {
           variant="ghost"
           size="sm"
           onClick={handleLoginRedirect}
-          className="text-sm text-gray-500 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm hover:bg-white/90"
+          className="text-sm text-gray-500 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm hover:bg-secondary/20 transition-colors"
         >
           Not logged in
         </Button>
