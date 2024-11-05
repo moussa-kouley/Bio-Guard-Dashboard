@@ -1,36 +1,51 @@
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { CalendarDays, Clock } from "lucide-react";
 import { format } from "date-fns";
+import io from "socket.io-client";
+import GpsMap from "@/components/GpsMap";
 
-interface Location {
-  id: number;
-  name: string;
-  severity: string;
-}
-
-interface MapData {
-  locations: Location[];
+interface GpsData {
+  latitude: number;
+  longitude: number;
+  temperature: number;
+  ph: number;
+  dissolvedsolids: number;
+  timestamp: string;
 }
 
 const Map = () => {
+  const [gpsData, setGpsData] = useState<GpsData[]>([]);
   const { toast } = useToast();
-  
-  const { data: mapData, isLoading } = useQuery<MapData>({
-    queryKey: ['map-data'],
-    queryFn: async () => {
-      // Simulated API call
-      return {
-        locations: [
-          { id: 1, name: "Location 1", severity: "high" },
-          { id: 2, name: "Location 2", severity: "medium" },
-          { id: 3, name: "Location 3", severity: "low" },
-        ]
-      };
-    }
-  });
+
+  useEffect(() => {
+    const socket = io("http://localhost:3000");
+
+    const fetchInitialData = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/gps-data");
+        const data = await response.json();
+        setGpsData(data);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch GPS data",
+          variant: "destructive",
+        });
+      }
+    };
+
+    socket.on("gpsDataUpdate", (newData: GpsData) => {
+      setGpsData(prev => [newData, ...prev]);
+    });
+
+    fetchInitialData();
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [toast]);
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
@@ -71,8 +86,8 @@ const Map = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="md:col-span-3 space-y-6">
-          <Card className="h-[600px] bg-gray-100 flex items-center justify-center">
-            <p className="text-gray-500">Map Integration Coming Soon</p>
+          <Card className="h-[600px]">
+            <GpsMap data={gpsData} />
           </Card>
 
           <div className="grid grid-cols-6 gap-4">
@@ -105,40 +120,28 @@ const Map = () => {
 
         <div className="space-y-4">
           <Card className="p-4">
-            <h3 className="font-semibold mb-2">Statistics</h3>
+            <h3 className="font-semibold mb-2">Latest Measurements</h3>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span>Total Areas</span>
-                <span className="font-medium">15</span>
+                <span>Temperature</span>
+                <span className="font-medium">{gpsData[0]?.temperature || 'N/A'}°C</span>
               </div>
               <div className="flex justify-between">
-                <span>High Severity</span>
-                <span className="text-red-500 font-medium">5</span>
+                <span>PH Level</span>
+                <span className="font-medium">{gpsData[0]?.ph || 'N/A'}</span>
               </div>
               <div className="flex justify-between">
-                <span>Medium Severity</span>
-                <span className="text-yellow-500 font-medium">7</span>
+                <span>Dissolved Solids</span>
+                <span className="font-medium">{gpsData[0]?.dissolvedsolids || 'N/A'}</span>
               </div>
               <div className="flex justify-between">
-                <span>Low Severity</span>
-                <span className="text-green-500 font-medium">3</span>
+                <span>Last Update</span>
+                <span className="font-medium">
+                  {gpsData[0]?.timestamp 
+                    ? format(new Date(gpsData[0].timestamp), 'HH:mm:ss')
+                    : 'N/A'}
+                </span>
               </div>
-            </div>
-          </Card>
-          
-          <Card className="p-4">
-            <h3 className="font-semibold mb-2">Recent Updates</h3>
-            <div className="space-y-2">
-              {isLoading ? (
-                <p>Loading...</p>
-              ) : (
-                mapData?.locations.map((location) => (
-                  <div key={location.id} className="p-2 bg-gray-50 rounded">
-                    <p className="font-medium">{location.name}</p>
-                    <p className="text-sm text-gray-500">Severity: {location.severity}</p>
-                  </div>
-                ))
-              )}
             </div>
           </Card>
         </div>
