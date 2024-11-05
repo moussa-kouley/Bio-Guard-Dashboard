@@ -33,7 +33,6 @@ const Map = () => {
   });
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    // Safe event handling
     const value = e.target.value;
     if (value) {
       toast({
@@ -48,12 +47,20 @@ const Map = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Water Hyacinth Map</h1>
         <div className="flex gap-4">
-          <select className="border rounded-md p-2" onChange={handleFilterChange}>
+          <select 
+            className="border rounded-md p-2" 
+            onChange={handleFilterChange}
+            defaultValue=""
+          >
             <option value="">All Regions</option>
             <option value="region1">Region 1</option>
             <option value="region2">Region 2</option>
           </select>
-          <select className="border rounded-md p-2" onChange={handleFilterChange}>
+          <select 
+            className="border rounded-md p-2" 
+            onChange={handleFilterChange}
+            defaultValue=""
+          >
             <option value="">All Severities</option>
             <option value="high">High</option>
             <option value="medium">Medium</option>
@@ -68,7 +75,6 @@ const Map = () => {
             <p className="text-gray-500">Map Integration Coming Soon</p>
           </Card>
 
-          {/* Prediction Timeline */}
           <div className="grid grid-cols-6 gap-4">
             <Card className="col-span-2 p-4 bg-primary text-primary-foreground">
               <div className="flex flex-col gap-2">
