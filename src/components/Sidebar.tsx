@@ -1,4 +1,4 @@
-import { MapPin, LayoutDashboard, Drone, GraduationCap, Users } from "lucide-react";
+import { MapPin, LayoutDashboard, Plane, GraduationCap, Users } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 const Sidebar = () => {
@@ -18,7 +18,7 @@ const Sidebar = () => {
           <LayoutDashboard className="w-6 h-6" />
         </Link>
         <Link to="/drone-control" className={`sidebar-icon ${location.pathname === '/drone-control' ? 'bg-primary/10' : ''}`}>
-          <Drone className="w-6 h-6" />
+          <Plane className="w-6 h-6" />
         </Link>
         <Link to="/education" className={`sidebar-icon ${location.pathname === '/education' ? 'bg-primary/10' : ''}`}>
           <GraduationCap className="w-6 h-6" />
