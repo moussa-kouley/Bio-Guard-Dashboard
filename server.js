@@ -43,19 +43,19 @@ const setupRealtimeSubscription = () => {
   return subscription;
 };
 
-// Initial data fetch
+// Initial data fetch - now fetching all records
 const fetchInitialData = async () => {
   try {
     const { data, error } = await supabase
       .from('gps_data')
       .select('*')
-      .order('timestamp', { ascending: false })
-      .limit(100);
+      .order('timestamp', { ascending: false });
 
     if (error) {
       console.error('Error fetching initial data:', error);
     } else {
       gpsDataArray = data || [];
+      console.log(`Fetched ${gpsDataArray.length} records from database`);
     }
   } catch (error) {
     console.error('Error fetching initial data:', error);
