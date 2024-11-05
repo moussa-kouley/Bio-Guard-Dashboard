@@ -10,7 +10,8 @@ const UserProfile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleLogout = () => {
+  const handleLogout = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
     setIsLoggedIn(false);
     toast({
       title: "Logged out successfully",
@@ -19,8 +20,9 @@ const UserProfile = () => {
     navigate("/");
   };
 
+  // Using a div with role="navigation" for better accessibility
   return (
-    <div className="fixed top-4 right-4 flex items-center gap-3">
+    <div role="navigation" className="fixed top-4 right-4 flex items-center gap-3">
       {isLoggedIn ? (
         <>
           <div className="flex items-center gap-2 bg-secondary px-3 py-1.5 rounded-full">
@@ -32,6 +34,7 @@ const UserProfile = () => {
             size="sm"
             className="flex items-center gap-2"
             onClick={handleLogout}
+            type="button"
           >
             <LogOut className="w-4 h-4" />
             Logout

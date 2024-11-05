@@ -13,7 +13,7 @@ import { createContext, useContext, useState } from "react";
 
 const queryClient = new QueryClient();
 
-// Create auth context
+// Create auth context with default values
 export const AuthContext = createContext<{
   isLoggedIn: boolean;
   setIsLoggedIn: (value: boolean) => void;
