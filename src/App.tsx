@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
+import UserProfile from "./components/UserProfile";
 import Index from "./pages/Index";
 import Map from "./pages/Map";
 import Dashboard from "./pages/Dashboard";
@@ -47,6 +48,7 @@ const App = () => {
                 element={
                   <>
                     <Sidebar />
+                    <UserProfile />
                     <div className="ml-16 flex-1">
                       <Routes>
                         <Route path="/map" element={<Map />} />
