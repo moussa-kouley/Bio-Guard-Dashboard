@@ -1,24 +1,43 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
+import { AuthContext } from "../App";
 
 const Index = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { setIsLoggedIn } = useContext(AuthContext);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (username && password) {
+    // Demo login credentials
+    if (username === "demo" && password === "demo") {
+      setIsLoggedIn(true);
       toast({
         title: "Login successful",
         description: "Welcome to BioGuard",
       });
       navigate("/map");
+    } else {
+      toast({
+        title: "Login failed",
+        description: "Please use demo/demo to login",
+        variant: "destructive",
+      });
     }
+  };
+
+  const handleContinueWithoutLogin = () => {
+    setIsLoggedIn(false);
+    toast({
+      title: "Limited Access Mode",
+      description: "You can only access Map and Education pages",
+    });
+    navigate("/map");
   };
 
   return (
@@ -28,6 +47,7 @@ const Index = () => {
           <img src="/logo.svg" alt="BioGuard" className="mx-auto h-24 w-24" />
           <h1 className="mt-6 text-3xl font-bold">Welcome to BioGuard</h1>
           <p className="mt-2 text-gray-600">GLOBAL ACTING IN IT 2024</p>
+          <p className="mt-2 text-sm text-primary">Use demo/demo to login</p>
         </div>
 
         <form onSubmit={handleLogin} className="mt-8 space-y-6">
@@ -65,7 +85,7 @@ const Index = () => {
               type="button"
               variant="outline"
               className="w-full"
-              onClick={() => navigate("/map")}
+              onClick={handleContinueWithoutLogin}
             >
               Continue without logging in
             </Button>
