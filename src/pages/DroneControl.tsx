@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { MapPin, Search, Battery, Camera, Propeller } from "lucide-react";
+import { MapPin, Search, Battery, Camera, RotateCw } from "lucide-react";
 
 const DroneControl = () => {
   const { toast } = useToast();
@@ -22,7 +22,6 @@ const DroneControl = () => {
       
       {/* Map Section */}
       <div className="w-full h-[400px] bg-gray-100 rounded-lg mb-6 relative">
-        {/* Placeholder for map - you would integrate your actual map component here */}
         <div className="absolute inset-0 bg-[#e6f0f9]">
           {[1, 2, 3].map((point) => (
             <div 
@@ -103,7 +102,7 @@ const DroneControl = () => {
               </Card>
 
               <Card className="p-4 text-center">
-                <Propeller className="mx-auto w-16 h-16 mb-2" />
+                <RotateCw className="mx-auto w-16 h-16 mb-2" />
                 <h4 className="font-medium mb-1">Propeller</h4>
                 <p className="text-sm text-gray-600">All the Propellers are properly working</p>
               </Card>
