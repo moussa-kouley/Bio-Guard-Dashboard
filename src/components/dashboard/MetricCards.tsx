@@ -70,15 +70,15 @@ export const MetricCards = ({ latestData, data }: MetricCardsProps) => {
         </Card>
       </div>
 
-      <Card className="col-span-1 lg:col-span-3 p-4">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Data Insight from Drones</h2>
-          <button className="flex items-center gap-2 bg-green-600 text-white px-3 py-1.5 rounded text-sm hover:bg-green-700">
-            <Download className="w-4 h-4" />
+      <Card className="col-span-1 lg:col-span-3 p-3">
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-base font-semibold">Data Insight from Drones</h2>
+          <button className="flex items-center gap-1 bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">
+            <Download className="w-3 h-3" />
             Download
           </button>
         </div>
-        <div className="overflow-hidden">
+        <div className="overflow-hidden max-h-[250px]">
           <GpsDataTable data={data} />
         </div>
       </Card>
