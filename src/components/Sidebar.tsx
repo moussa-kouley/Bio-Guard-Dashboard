@@ -1,4 +1,4 @@
-import { MapPin, LayoutDashboard, Plane, GraduationCap, Users } from "lucide-react";
+import { MapPin, LayoutDashboard, Helicopter, GraduationCap, Users } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../App";
@@ -25,7 +25,7 @@ const Sidebar = () => {
         )}
         {isLoggedIn && (
           <Link to="/drone-control" className={`sidebar-icon ${location.pathname === '/drone-control' ? 'bg-primary/10' : ''}`}>
-            <Plane className="w-6 h-6" />
+            <Helicopter className="w-6 h-6" />
           </Link>
         )}
         <Link to="/education" className={`sidebar-icon ${location.pathname === '/education' ? 'bg-primary/10' : ''}`}>
