@@ -13,6 +13,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useEffect, useState } from "react";
+import GpsDataTable from "@/components/GpsDataTable";
 
 interface GpsData {
   latitude: number;
@@ -145,6 +146,15 @@ const Dashboard = () => {
               <p className="text-sm text-gray-600">TDS Level</p>
             </div>
             <Droplets className="w-8 h-8 text-green-500" />
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 mb-6">
+        <Card className="p-4">
+          <h2 className="text-lg font-semibold mb-4">Data Insight from Drones</h2>
+          <div className="overflow-hidden">
+            <GpsDataTable data={gpsData} />
           </div>
         </Card>
       </div>
