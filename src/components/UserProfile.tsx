@@ -20,28 +20,29 @@ const UserProfile = () => {
     navigate("/");
   };
 
-  // Using a div with role="navigation" for better accessibility
   return (
-    <div role="navigation" className="fixed top-4 right-4 flex items-center gap-3">
+    <div role="navigation" className="fixed top-0 right-0 p-4 z-50 flex items-center gap-3">
       {isLoggedIn ? (
-        <>
-          <div className="flex items-center gap-2 bg-secondary px-3 py-1.5 rounded-full">
-            <User className="w-4 h-4" />
-            <span className="text-sm font-medium">demo</span>
+        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+          <div className="flex items-center gap-2 bg-secondary/80 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm">
+            <User className="w-4 h-4 text-primary" />
+            <span className="text-sm font-medium hidden sm:inline">demo</span>
           </div>
           <Button
             variant="outline"
             size="sm"
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-white/80 backdrop-blur-sm shadow-sm hover:bg-white/90"
             onClick={handleLogout}
             type="button"
           >
             <LogOut className="w-4 h-4" />
-            Logout
+            <span className="hidden sm:inline">Logout</span>
           </Button>
-        </>
+        </div>
       ) : (
-        <div className="text-sm text-gray-500">Not logged in</div>
+        <div className="text-sm text-gray-500 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm">
+          Not logged in
+        </div>
       )}
     </div>
   );
