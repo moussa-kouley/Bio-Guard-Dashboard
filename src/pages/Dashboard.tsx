@@ -5,6 +5,7 @@ import io from "socket.io-client";
 import GpsDataTable from "@/components/GpsDataTable";
 import GpsMap from "@/components/GpsMap";
 import TemperatureChart from "@/components/TemperatureChart";
+import { Activity, ThermometerSun, Droplets, Flask } from "lucide-react";
 
 interface GpsData {
   latitude: number;
@@ -50,54 +51,88 @@ const Dashboard = () => {
     };
   }, [toast]);
 
+  const getLatestData = () => {
+    return gpsData[0] || null;
+  };
+
+  const latestData = getLatestData();
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Real Time GPS Data Monitoring</h1>
+        <h1 className="text-2xl font-bold">Water Quality Monitoring Dashboard</h1>
         <div className="flex items-center gap-4">
           <div className="bg-green-100 p-2 rounded">
             <p className="text-sm">LAST UPDATE</p>
             <p className="font-semibold">
-              {gpsData[0]?.timestamp
-                ? new Date(gpsData[0].timestamp).toLocaleString()
+              {latestData?.timestamp
+                ? new Date(latestData.timestamp).toLocaleString()
                 : "No data"}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <Card className="p-4">
-          <h2 className="text-lg font-semibold mb-4">Latest Measurements</h2>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-orange-50 p-4 rounded">
-              <h3 className="text-sm font-medium">Temperature</h3>
-              <p className="text-2xl font-bold">{gpsData[0]?.temperature || "N/A"}°C</p>
-            </div>
-            <div className="bg-blue-50 p-4 rounded">
-              <h3 className="text-sm font-medium">PH Level</h3>
-              <p className="text-2xl font-bold">{gpsData[0]?.ph || "N/A"}</p>
-            </div>
-            <div className="bg-green-50 p-4 rounded">
-              <h3 className="text-sm font-medium">Dissolved Solids</h3>
-              <p className="text-2xl font-bold">{gpsData[0]?.dissolvedsolids || "N/A"}</p>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <Card className="p-4 bg-blue-50">
+          <div className="flex items-center gap-3">
+            <ThermometerSun className="w-8 h-8 text-blue-500" />
+            <div>
+              <p className="text-sm text-gray-600">Temperature</p>
+              <p className="text-2xl font-bold">{latestData?.temperature || "N/A"}°C</p>
             </div>
           </div>
         </Card>
 
-        <Card className="p-4">
-          <h2 className="text-lg font-semibold mb-4">GPS Location</h2>
-          <GpsMap data={gpsData} />
+        <Card className="p-4 bg-green-50">
+          <div className="flex items-center gap-3">
+            <Flask className="w-8 h-8 text-green-500" />
+            <div>
+              <p className="text-sm text-gray-600">PH Level</p>
+              <p className="text-2xl font-bold">{latestData?.ph || "N/A"}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4 bg-purple-50">
+          <div className="flex items-center gap-3">
+            <Droplets className="w-8 h-8 text-purple-500" />
+            <div>
+              <p className="text-sm text-gray-600">Dissolved Solids</p>
+              <p className="text-2xl font-bold">{latestData?.dissolvedsolids || "N/A"}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4 bg-orange-50">
+          <div className="flex items-center gap-3">
+            <Activity className="w-8 h-8 text-orange-500" />
+            <div>
+              <p className="text-sm text-gray-600">HDOP</p>
+              <p className="text-2xl font-bold">{latestData?.hdop || "N/A"}</p>
+            </div>
+          </div>
         </Card>
       </div>
 
-      <Card className="mb-6 p-4">
-        <h2 className="text-lg font-semibold mb-4">Temperature Trends</h2>
-        <TemperatureChart data={gpsData} />
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <Card className="p-4">
+          <h2 className="text-lg font-semibold mb-4">Location Tracking</h2>
+          <div className="h-[400px]">
+            <GpsMap data={gpsData} />
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <h2 className="text-lg font-semibold mb-4">Temperature Trends</h2>
+          <div className="h-[400px]">
+            <TemperatureChart data={gpsData} />
+          </div>
+        </Card>
+      </div>
 
       <Card className="p-4">
-        <h2 className="text-lg font-semibold mb-4">Recent GPS Data</h2>
+        <h2 className="text-lg font-semibold mb-4">Recent Measurements</h2>
         <GpsDataTable data={gpsData} />
       </Card>
     </div>
