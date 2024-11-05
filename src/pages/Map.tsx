@@ -5,10 +5,20 @@ import { useToast } from "@/components/ui/use-toast";
 import { CalendarDays, Clock } from "lucide-react";
 import { format } from "date-fns";
 
+interface Location {
+  id: number;
+  name: string;
+  severity: string;
+}
+
+interface MapData {
+  locations: Location[];
+}
+
 const Map = () => {
   const { toast } = useToast();
   
-  const { data: mapData, isLoading } = useQuery({
+  const { data: mapData, isLoading } = useQuery<MapData>({
     queryKey: ['map-data'],
     queryFn: async () => {
       // Simulated API call
@@ -22,21 +32,32 @@ const Map = () => {
     }
   });
 
+  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    // Safe event handling
+    const value = e.target.value;
+    if (value) {
+      toast({
+        title: "Filter applied",
+        description: `Filtered by ${value}`,
+      });
+    }
+  };
+
   return (
     <div className="p-6 mt-16">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Water Hyacinth Map</h1>
         <div className="flex gap-4">
-          <select className="border rounded-md p-2">
-            <option>All Regions</option>
-            <option>Region 1</option>
-            <option>Region 2</option>
+          <select className="border rounded-md p-2" onChange={handleFilterChange}>
+            <option value="">All Regions</option>
+            <option value="region1">Region 1</option>
+            <option value="region2">Region 2</option>
           </select>
-          <select className="border rounded-md p-2">
-            <option>All Severities</option>
-            <option>High</option>
-            <option>Medium</option>
-            <option>Low</option>
+          <select className="border rounded-md p-2" onChange={handleFilterChange}>
+            <option value="">All Severities</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
           </select>
         </div>
       </div>
