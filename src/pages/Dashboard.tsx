@@ -9,6 +9,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Area,
+  AreaChart,
 } from "recharts";
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
@@ -78,71 +80,96 @@ const Dashboard = () => {
 
   const latestData = getLatestData();
 
+  // Mock data for charts
+  const growthData = [
+    { name: 'Jan', coverage: 15, growthRate: 0.8 },
+    { name: 'Feb', coverage: 18, growthRate: 1.2 },
+    { name: 'Mar', coverage: 25, growthRate: 1.5 },
+    { name: 'Apr', coverage: 28, growthRate: 1.8 },
+    { name: 'May', coverage: 30, growthRate: 2.0 },
+  ];
+
+  const waterQualityData = [
+    { name: 'Jan', ph: 7, dissolvedOxygen: 8, turbidity: 5 },
+    { name: 'Feb', ph: 6.8, dissolvedOxygen: 7.5, turbidity: 5.5 },
+    { name: 'Mar', ph: 6.9, dissolvedOxygen: 7.8, turbidity: 5.2 },
+    { name: 'Apr', ph: 7.1, dissolvedOxygen: 8.2, turbidity: 4.8 },
+    { name: 'May', ph: 7.0, dissolvedOxygen: 8.0, turbidity: 5.0 },
+  ];
+
   return (
     <div className="p-6">
       <DashboardHeader latestData={latestData} />
       <MetricCards latestData={latestData} />
       <DataInsights data={gpsData} />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <Card className="p-4">
-          <h2 className="text-lg font-semibold mb-4">Water Quality Trends</h2>
+          <h2 className="text-lg font-semibold mb-4">Water Hyacinth Growth Analysis</h2>
           <div className="h-[300px]">
-            {gpsData.length > 0 ? (
-              <ResponsiveContainer>
-                <LineChart data={gpsData.slice(0, 20).reverse()}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="timestamp" 
-                    tickFormatter={(value) => format(new Date(value), "HH:mm")}
-                  />
-                  <YAxis />
-                  <Tooltip 
-                    labelFormatter={(value) => format(new Date(value), "dd/MM/yyyy HH:mm")}
-                  />
-                  <Line type="monotone" dataKey="ph" stroke="#2196F3" name="pH" />
-                  <Line type="monotone" dataKey="dissolvedsolids" stroke="#4CAF50" name="TDS" />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <p>No data available</p>
-              </div>
-            )}
+            <ResponsiveContainer>
+              <AreaChart data={growthData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Area type="monotone" dataKey="coverage" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.3} />
+                <Line type="monotone" dataKey="growthRate" stroke="#8884d8" />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </Card>
 
         <Card className="p-4">
-          <h2 className="text-lg font-semibold mb-4">Alerts & Recommendations</h2>
-          <div className="space-y-4">
+          <h2 className="text-lg font-semibold mb-4">Water Quality Trends</h2>
+          <div className="h-[300px]">
+            <ResponsiveContainer>
+              <LineChart data={waterQualityData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="ph" stroke="#8884d8" name="pH" />
+                <Line type="monotone" dataKey="dissolvedOxygen" stroke="#82ca9d" name="Dissolved Oxygen" />
+                <Line type="monotone" dataKey="turbidity" stroke="#ffc658" name="Turbidity" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
+        <Card className="p-4 col-span-1 lg:col-span-2">
+          <h2 className="text-lg font-semibold mb-4">Action & Recommendations</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
-              <h3 className="font-medium mb-2">Recent Alerts</h3>
-              {[
-                { severity: "critical", message: "Water quality levels critical in northern zone" },
-                { severity: "warning", message: "Dissolved solids approaching threshold in western zone" },
-              ].map((alert, index) => (
-                <div
-                  key={index}
-                  className={`p-2 rounded mb-2 ${
-                    alert.severity === "critical" ? "bg-red-100" : "bg-yellow-100"
-                  }`}
-                >
-                  {alert.message}
+              <h3 className="font-medium mb-2">Interventions Needed</h3>
+              <div className="space-y-2">
+                <div className="p-2 bg-red-100 rounded">
+                  <p className="text-sm">Deploy harvesters to remove hyacinth in the northern zone</p>
                 </div>
-              ))}
+                <div className="p-2 bg-orange-100 rounded">
+                  <p className="text-sm">Introduce biological control agents in areas with new hyacinth growth</p>
+                </div>
+                <div className="p-2 bg-orange-100 rounded">
+                  <p className="text-sm">Implement nutrient management strategies in the western zone</p>
+                </div>
+              </div>
             </div>
             <div>
-              <h3 className="font-medium mb-2">Recommendations</h3>
-              {[
-                { title: "Deploy water quality sensors", effectiveness: "85%" },
-                { title: "Implement filtration system", effectiveness: "65%" },
-                { title: "Regular monitoring schedule", effectiveness: "49%" },
-              ].map((rec, index) => (
-                <div key={index} className="flex justify-between items-center mb-2 p-2 bg-gray-50 rounded">
-                  <span>{rec.title}</span>
-                  <span className="text-sm text-green-600">{rec.effectiveness}</span>
+              <h3 className="font-medium mb-2">Tips for Prevention</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center p-2 bg-blue-50 rounded">
+                  <span className="text-sm">Implement nutrient management strategies</span>
+                  <span className="text-sm text-green-600">65% effective</span>
                 </div>
-              ))}
+                <div className="flex justify-between items-center p-2 bg-blue-50 rounded">
+                  <span className="text-sm">Introduce biological control agents</span>
+                  <span className="text-sm text-green-600">85% effective</span>
+                </div>
+                <div className="flex justify-between items-center p-2 bg-blue-50 rounded">
+                  <span className="text-sm">Conduct regular mechanical removal</span>
+                  <span className="text-sm text-green-600">49% effective</span>
+                </div>
+              </div>
             </div>
           </div>
         </Card>

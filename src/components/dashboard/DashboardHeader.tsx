@@ -7,16 +7,22 @@ interface DashboardHeaderProps {
 
 export const DashboardHeader = ({ latestData }: DashboardHeaderProps) => {
   return (
-    <div className="flex justify-between items-center mb-6">
-      <h1 className="text-2xl font-bold">Real Time Monitoring Dashboard</h1>
-      <div className="flex items-center gap-4">
-        <div className="bg-green-100 p-2 rounded">
-          <p className="text-sm">LAST UPDATE</p>
-          <p className="font-semibold">
+    <div className="flex flex-col gap-4 mb-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Real Time Monitoring Dashboard</h1>
+      </div>
+      <div className="flex justify-end gap-4 bg-green-100/50 p-2">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">LAST DATE OF DRONE FLIGHT:</span>
+          <span className="text-sm">
             {latestData?.timestamp
               ? format(new Date(latestData.timestamp), "dd/MM/yyyy, HH:mm")
-              : "No data"}
-          </p>
+              : "28/12/2024, 15:23"}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 bg-green-600 text-white px-4 py-1">
+          <span className="text-sm font-medium">TODAY IS:</span>
+          <span className="text-sm">28/12/2024, 15:23</span>
         </div>
       </div>
     </div>

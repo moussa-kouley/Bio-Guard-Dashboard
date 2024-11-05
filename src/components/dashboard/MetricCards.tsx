@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { ThermometerSun, FlaskConical, Droplets } from "lucide-react";
+import { ThermometerSun, FlaskConical, Droplets, TrendingUp, ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { GpsData } from "@/types/gps";
 
 interface MetricCardsProps {
@@ -7,38 +7,98 @@ interface MetricCardsProps {
 }
 
 export const MetricCards = ({ latestData }: MetricCardsProps) => {
+  // Mock data to match the image
+  const metrics = {
+    currentCoverage: "30%",
+    previousCoverage: "3.5%",
+    growthRate: "1.6%",
+    waterQuality: "-13%",
+    predictedCoverage: "34%",
+    temperature: "23°C"
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-      <Card className="p-4 bg-orange-50">
-        <h3 className="text-sm font-medium mb-2">Current Coverage</h3>
-        <div className="flex items-center gap-3">
-          <div>
-            <p className="text-3xl font-bold">{latestData?.temperature || "N/A"}°C</p>
-            <p className="text-sm text-gray-600">Temperature</p>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-3 col-span-1 lg:col-span-2 gap-4">
+        <Card className="p-4 bg-orange-50 flex flex-col">
+          <h3 className="text-sm font-medium mb-2">Current WH Coverage</h3>
+          <div className="flex items-center gap-3">
+            <div>
+              <p className="text-3xl font-bold">{metrics.currentCoverage}</p>
+              <p className="text-xs text-gray-600">present coverage area</p>
+            </div>
           </div>
-          <ThermometerSun className="w-8 h-8 text-orange-500" />
-        </div>
-      </Card>
+        </Card>
 
-      <Card className="p-4 bg-blue-50">
-        <h3 className="text-sm font-medium mb-2">Water Quality</h3>
-        <div className="flex items-center gap-3">
-          <div>
-            <p className="text-3xl font-bold">{latestData?.ph || "N/A"}</p>
-            <p className="text-sm text-gray-600">pH Level</p>
+        <Card className="p-4 bg-blue-50 flex flex-col">
+          <h3 className="text-sm font-medium mb-2">Previous WH Coverage</h3>
+          <div className="flex items-center gap-3">
+            <div>
+              <p className="text-3xl font-bold">{metrics.previousCoverage}</p>
+              <p className="text-xs text-gray-600">present coverage area</p>
+            </div>
           </div>
-          <FlaskConical className="w-8 h-8 text-blue-500" />
-        </div>
-      </Card>
+        </Card>
 
-      <Card className="p-4 bg-green-50">
-        <h3 className="text-sm font-medium mb-2">Dissolved Solids</h3>
-        <div className="flex items-center gap-3">
-          <div>
-            <p className="text-3xl font-bold">{latestData?.dissolvedsolids || "N/A"}</p>
-            <p className="text-sm text-gray-600">TDS Level</p>
+        <Card className="p-4 bg-green-50 flex flex-col">
+          <h3 className="text-sm font-medium mb-2">Growth Rate - WH</h3>
+          <div className="flex items-center gap-3">
+            <div>
+              <p className="text-3xl font-bold">{metrics.growthRate}</p>
+              <p className="text-xs text-gray-600">per week</p>
+            </div>
+            <TrendingUp className="w-8 h-8 text-green-500" />
           </div>
-          <Droplets className="w-8 h-8 text-green-500" />
+        </Card>
+
+        <Card className="p-4 bg-red-50 flex flex-col">
+          <h3 className="text-sm font-medium mb-2">Water Quality Impact</h3>
+          <div className="flex items-center gap-3">
+            <div>
+              <p className="text-3xl font-bold">{metrics.waterQuality}</p>
+              <p className="text-xs text-gray-600">Decrease in water quality</p>
+            </div>
+            <ArrowDownRight className="w-8 h-8 text-red-500" />
+          </div>
+        </Card>
+
+        <Card className="p-4 bg-purple-50 flex flex-col">
+          <h3 className="text-sm font-medium mb-2">Predicted Coverage</h3>
+          <div className="flex items-center gap-3">
+            <div>
+              <p className="text-3xl font-bold">{metrics.predictedCoverage}</p>
+              <p className="text-xs text-gray-600">estimated next month</p>
+            </div>
+            <ArrowUpRight className="w-8 h-8 text-purple-500" />
+          </div>
+        </Card>
+
+        <Card className="p-4 bg-yellow-50 flex flex-col">
+          <h3 className="text-sm font-medium mb-2">Water Temperature</h3>
+          <div className="flex items-center gap-3">
+            <div>
+              <p className="text-3xl font-bold">{metrics.temperature}</p>
+              <p className="text-xs text-gray-600">Current water temperature</p>
+            </div>
+            <ThermometerSun className="w-8 h-8 text-yellow-500" />
+          </div>
+        </Card>
+      </div>
+
+      <Card className="p-4 col-span-1">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">Recent Findings</h2>
+        </div>
+        <div className="space-y-3">
+          <div className="p-2 bg-blue-100 rounded">
+            <p className="text-sm">15% increase in water hyacinth in the northern zone</p>
+          </div>
+          <div className="p-2 bg-cyan-100 rounded">
+            <p className="text-sm">Decrease in dissolved oxygen levels near dense hyacinth patches</p>
+          </div>
+          <div className="p-2 bg-orange-100 rounded">
+            <p className="text-sm">Increased nutrient levels detected in southern zone</p>
+          </div>
         </div>
       </Card>
     </div>
