@@ -1,4 +1,3 @@
-import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import io from "socket.io-client";
@@ -13,6 +12,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { useEffect, useState } from "react";
 
 interface GpsData {
   latitude: number;
@@ -31,24 +31,47 @@ const Dashboard = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const socket = io("http://localhost:3000");
+    const serverUrl = import.meta.env.VITE_SERVER_URL || window.location.origin;
+    const socket = io(serverUrl, {
+      reconnectionAttempts: 5,
+      timeout: 10000,
+    });
 
     const fetchInitialData = async () => {
       try {
-        const response = await fetch("http://localhost:3000/gps-data");
+        const response = await fetch(`${serverUrl}/gps-data`);
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
         const data = await response.json();
-        setGpsData(data);
+        setGpsData(data || []);
       } catch (error) {
+        console.error('Failed to fetch GPS data:', error);
         toast({
           title: "Error",
-          description: "Failed to fetch GPS data",
+          description: "Failed to fetch GPS data. Please try again later.",
           variant: "destructive",
         });
       }
     };
 
+    socket.on("connect", () => {
+      console.log("Connected to WebSocket");
+    });
+
+    socket.on("connect_error", (error) => {
+      console.error("Socket connection error:", error);
+      toast({
+        title: "Connection Error",
+        description: "Failed to connect to real-time updates",
+        variant: "destructive",
+      });
+    });
+
     socket.on("gpsDataUpdate", (newData: GpsData) => {
-      setGpsData(prev => [newData, ...prev]);
+      if (newData) {
+        setGpsData(prev => [newData, ...prev]);
+      }
     });
 
     fetchInitialData();
@@ -59,7 +82,7 @@ const Dashboard = () => {
   }, [toast]);
 
   const getLatestData = () => {
-    return gpsData[0] || null;
+    return gpsData.length > 0 ? gpsData[0] : null;
   };
 
   const latestData = getLatestData();
@@ -130,21 +153,27 @@ const Dashboard = () => {
         <Card className="p-4">
           <h2 className="text-lg font-semibold mb-4">Water Quality Trends</h2>
           <div className="h-[300px]">
-            <ResponsiveContainer>
-              <LineChart data={gpsData.slice(0, 20).reverse()}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="timestamp" 
-                  tickFormatter={(value) => format(new Date(value), "HH:mm")}
-                />
-                <YAxis />
-                <Tooltip 
-                  labelFormatter={(value) => format(new Date(value), "dd/MM/yyyy HH:mm")}
-                />
-                <Line type="monotone" dataKey="ph" stroke="#2196F3" name="pH" />
-                <Line type="monotone" dataKey="dissolvedsolids" stroke="#4CAF50" name="TDS" />
-              </LineChart>
-            </ResponsiveContainer>
+            {gpsData.length > 0 ? (
+              <ResponsiveContainer>
+                <LineChart data={gpsData.slice(0, 20).reverse()}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="timestamp" 
+                    tickFormatter={(value) => format(new Date(value), "HH:mm")}
+                  />
+                  <YAxis />
+                  <Tooltip 
+                    labelFormatter={(value) => format(new Date(value), "dd/MM/yyyy HH:mm")}
+                  />
+                  <Line type="monotone" dataKey="ph" stroke="#2196F3" name="pH" />
+                  <Line type="monotone" dataKey="dissolvedsolids" stroke="#4CAF50" name="TDS" />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <p>No data available</p>
+              </div>
+            )}
           </div>
         </Card>
 

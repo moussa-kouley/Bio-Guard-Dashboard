@@ -20,24 +20,48 @@ const Map = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const socket = io("http://localhost:3000");
+    // Use environment variable or fallback for the server URL
+    const serverUrl = import.meta.env.VITE_SERVER_URL || window.location.origin;
+    const socket = io(serverUrl, {
+      reconnectionAttempts: 5,
+      timeout: 10000,
+    });
 
     const fetchInitialData = async () => {
       try {
-        const response = await fetch("http://localhost:3000/gps-data");
+        const response = await fetch(`${serverUrl}/gps-data`);
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
         const data = await response.json();
-        setGpsData(data);
+        setGpsData(data || []);
       } catch (error) {
+        console.error('Failed to fetch GPS data:', error);
         toast({
           title: "Error",
-          description: "Failed to fetch GPS data",
+          description: "Failed to fetch GPS data. Please try again later.",
           variant: "destructive",
         });
       }
     };
 
+    socket.on("connect", () => {
+      console.log("Connected to WebSocket");
+    });
+
+    socket.on("connect_error", (error) => {
+      console.error("Socket connection error:", error);
+      toast({
+        title: "Connection Error",
+        description: "Failed to connect to real-time updates",
+        variant: "destructive",
+      });
+    });
+
     socket.on("gpsDataUpdate", (newData: GpsData) => {
-      setGpsData(prev => [newData, ...prev]);
+      if (newData) {
+        setGpsData(prev => [newData, ...prev]);
+      }
     });
 
     fetchInitialData();
@@ -47,16 +71,6 @@ const Map = () => {
     };
   }, [toast]);
 
-  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value;
-    if (value) {
-      toast({
-        title: "Filter applied",
-        description: `Filtered by ${value}`,
-      });
-    }
-  };
-
   return (
     <div className="p-6 mt-16">
       <div className="flex justify-between items-center mb-6">
@@ -64,7 +78,6 @@ const Map = () => {
         <div className="flex gap-4">
           <select 
             className="border rounded-md p-2" 
-            onChange={handleFilterChange}
             defaultValue=""
           >
             <option value="">All Regions</option>
@@ -73,7 +86,6 @@ const Map = () => {
           </select>
           <select 
             className="border rounded-md p-2" 
-            onChange={handleFilterChange}
             defaultValue=""
           >
             <option value="">All Severities</option>
@@ -87,7 +99,13 @@ const Map = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="md:col-span-3 space-y-6">
           <Card className="h-[600px]">
-            <GpsMap data={gpsData} />
+            {gpsData.length > 0 ? (
+              <GpsMap data={gpsData} />
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <p>No GPS data available</p>
+              </div>
+            )}
           </Card>
 
           <div className="grid grid-cols-6 gap-4">
@@ -122,26 +140,30 @@ const Map = () => {
           <Card className="p-4">
             <h3 className="font-semibold mb-2">Latest Measurements</h3>
             <div className="space-y-2">
-              <div className="flex justify-between">
-                <span>Temperature</span>
-                <span className="font-medium">{gpsData[0]?.temperature || 'N/A'}°C</span>
-              </div>
-              <div className="flex justify-between">
-                <span>PH Level</span>
-                <span className="font-medium">{gpsData[0]?.ph || 'N/A'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Dissolved Solids</span>
-                <span className="font-medium">{gpsData[0]?.dissolvedsolids || 'N/A'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Last Update</span>
-                <span className="font-medium">
-                  {gpsData[0]?.timestamp 
-                    ? format(new Date(gpsData[0].timestamp), 'HH:mm:ss')
-                    : 'N/A'}
-                </span>
-              </div>
+              {gpsData[0] ? (
+                <>
+                  <div className="flex justify-between">
+                    <span>Temperature</span>
+                    <span className="font-medium">{gpsData[0].temperature}°C</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>PH Level</span>
+                    <span className="font-medium">{gpsData[0].ph}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Dissolved Solids</span>
+                    <span className="font-medium">{gpsData[0].dissolvedsolids}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Last Update</span>
+                    <span className="font-medium">
+                      {format(new Date(gpsData[0].timestamp), 'HH:mm:ss')}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <p>No data available</p>
+              )}
             </div>
           </Card>
         </div>
