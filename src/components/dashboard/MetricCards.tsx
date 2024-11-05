@@ -1,12 +1,14 @@
 import { Card } from "@/components/ui/card";
-import { ThermometerSun, FlaskConical, Droplets, TrendingUp, ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { Download, ThermometerSun, FlaskConical, Droplets, TrendingUp, ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { GpsData } from "@/types/gps";
+import GpsDataTable from "@/components/GpsDataTable";
 
 interface MetricCardsProps {
   latestData?: GpsData;
+  data: GpsData[];
 }
 
-export const MetricCards = ({ latestData }: MetricCardsProps) => {
+export const MetricCards = ({ latestData, data }: MetricCardsProps) => {
   // Mock data to match the image
   const metrics = {
     currentCoverage: "30%",
@@ -85,7 +87,22 @@ export const MetricCards = ({ latestData }: MetricCardsProps) => {
         </Card>
       </div>
 
-      <Card className="p-4 col-span-1">
+      <div className="col-span-1 lg:col-span-3 order-2">
+        <Card className="p-4">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold">Data Insight from Drones</h2>
+            <button className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+              <Download className="w-4 h-4" />
+              Download
+            </button>
+          </div>
+          <div className="overflow-hidden max-h-[300px]">
+            <GpsDataTable data={data} />
+          </div>
+        </Card>
+      </div>
+
+      <Card className="p-4 col-span-1 order-3">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">Recent Findings</h2>
         </div>

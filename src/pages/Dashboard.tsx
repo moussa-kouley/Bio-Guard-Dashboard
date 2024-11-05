@@ -16,8 +16,8 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { MetricCards } from "@/components/dashboard/MetricCards";
-import { DataInsights } from "@/components/dashboard/DataInsights";
 import type { GpsData } from "@/types/gps";
+import GpsDataTable from "@/components/GpsDataTable";
 
 const Dashboard = () => {
   const [gpsData, setGpsData] = useState<GpsData[]>([]);
@@ -100,8 +100,7 @@ const Dashboard = () => {
   return (
     <div className="p-6">
       <DashboardHeader latestData={latestData} />
-      <MetricCards latestData={latestData} />
-      <DataInsights data={gpsData} />
+      <MetricCards latestData={latestData} data={gpsData} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <Card className="p-4">
