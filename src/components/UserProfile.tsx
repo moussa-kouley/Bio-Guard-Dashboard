@@ -25,7 +25,7 @@ const UserProfile = () => {
   };
 
   return (
-    <div role="navigation" className="fixed top-4 right-6 p-4 z-50 flex items-center gap-3">
+    <div role="navigation" className="fixed top-2 right-6 p-4 z-50 flex items-center gap-3">
       {isLoggedIn ? (
         <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
           <div className="flex items-center gap-2 bg-secondary/80 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm">
