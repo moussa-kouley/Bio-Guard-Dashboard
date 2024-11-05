@@ -6,8 +6,9 @@ const Sidebar = () => {
 
   return (
     <div className="fixed left-0 top-0 h-screen w-16 bg-white border-r flex flex-col items-center py-4">
-      <div className="mb-8">
-        <img src="/logo.png" alt="BioGuard" className="w-12 h-12" />
+      <div className="mb-8 flex flex-col items-center">
+        <img src="/logo.svg" alt="BioGuard" className="w-12 h-12" />
+        <span className="text-xs font-semibold mt-2 text-primary rotate-[-90deg] whitespace-nowrap">BioGuard</span>
       </div>
       
       <nav className="flex flex-col gap-4">

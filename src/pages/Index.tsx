@@ -25,9 +25,9 @@ const Index = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8">
         <div className="text-center">
-          <img src="/logo.png" alt="BioGuard" className="mx-auto h-24 w-24" />
-          <h1 className="mt-6 text-3xl font-bold">Welcome to BioGuard app.</h1>
-          <p className="mt-2 text-gray-600">Monitoring, prevention and predicting application for Water Hyacinth</p>
+          <img src="/logo.svg" alt="BioGuard" className="mx-auto h-24 w-24" />
+          <h1 className="mt-6 text-3xl font-bold">Welcome to BioGuard</h1>
+          <p className="mt-2 text-gray-600">GLOBAL ACTING IN IT 2024</p>
         </div>
 
         <form onSubmit={handleLogin} className="mt-8 space-y-6">
