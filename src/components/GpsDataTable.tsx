@@ -19,7 +19,6 @@ interface GpsDataTableProps {
 }
 
 const GpsDataTable = ({ data }: GpsDataTableProps) => {
-  // Add null check for data
   if (!data || !Array.isArray(data)) {
     return (
       <div className="w-full p-4 text-center text-gray-500">
@@ -28,18 +27,18 @@ const GpsDataTable = ({ data }: GpsDataTableProps) => {
     );
   }
 
+  // Function to find the latest valid value for a specific field
+  const getLatestValidValue = (entries: GpsData[], field: keyof GpsData): number | null => {
+    return entries.reduce((latest: number | null, entry) => {
+      const value = entry[field];
+      if (typeof value === 'number' && value !== 0 && !isNaN(value)) {
+        return latest === null ? value : latest;
+      }
+      return latest;
+    }, null);
+  };
+
   const sortedData = [...data]
-    .filter(entry => {
-      // Only include entries that have valid data
-      return entry && 
-             entry.timestamp && 
-             entry.latitude !== null && 
-             entry.longitude !== null && 
-             entry.ph !== null && 
-             entry.hdop !== null && 
-             entry.altitude !== null && 
-             entry.temperature !== null;
-    })
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
     .slice(0, 5);
 
@@ -51,9 +50,13 @@ const GpsDataTable = ({ data }: GpsDataTableProps) => {
     );
   }
 
-  const formatValue = (value: number | null, suffix: string = '%', multiplier: number = 0.1) => {
-    if (value === null) return '-';
-    return `${(value * multiplier).toFixed(1)}${suffix}`;
+  const formatValue = (currentValue: number | null, entries: GpsData[], field: keyof GpsData, suffix: string = '%', multiplier: number = 0.1) => {
+    let valueToUse = currentValue;
+    if (valueToUse === null || valueToUse === 0) {
+      valueToUse = getLatestValidValue(entries, field);
+    }
+    if (valueToUse === null) return '0.0%';
+    return `${(valueToUse * multiplier).toFixed(1)}${suffix}`;
   };
 
   return (
@@ -78,22 +81,25 @@ const GpsDataTable = ({ data }: GpsDataTableProps) => {
                 {format(new Date(entry.timestamp), 'dd/MM/yyyy')}
               </TableCell>
               <TableCell className="py-2">
-                {formatValue(entry.latitude)}
+                {formatValue(entry.latitude, sortedData, 'latitude')}
               </TableCell>
               <TableCell className="py-2">
-                {formatValue(entry.longitude)}
+                {formatValue(entry.longitude, sortedData, 'longitude')}
               </TableCell>
               <TableCell className="py-2">
-                {entry.ph ? entry.ph.toFixed(1) : '-'}
+                {entry.ph ? entry.ph.toFixed(1) : formatValue(entry.ph, sortedData, 'ph', '', 1)}
               </TableCell>
               <TableCell className="py-2">
-                {formatValue(entry.hdop)}
+                {formatValue(entry.hdop, sortedData, 'hdop')}
               </TableCell>
               <TableCell className="py-2">
-                {formatValue(entry.altitude)}
+                {formatValue(entry.altitude, sortedData, 'altitude')}
               </TableCell>
               <TableCell className="py-2">
-                {entry.temperature ? `${entry.temperature.toFixed(1)}°C` : '-'}
+                {entry.temperature ? 
+                  `${entry.temperature.toFixed(1)}°C` : 
+                  `${formatValue(entry.temperature, sortedData, 'temperature', '°C', 1)}`
+                }
               </TableCell>
               <TableCell className="py-2">
                 {format(new Date(entry.timestamp), 'HH:mm:ss')}

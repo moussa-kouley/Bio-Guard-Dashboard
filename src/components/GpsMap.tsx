@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -16,32 +16,35 @@ interface GpsMapProps {
   data: GpsData[];
 }
 
-const GpsMap = ({ data }: GpsMapProps) => {
-  const defaultPosition: [number, number] = [1.3521, 103.8198];
+// Component to handle map bounds
+const MapBoundsComponent = ({ data }: { data: GpsData[] }) => {
+  const map = useMap();
 
   useEffect(() => {
     if (data.length > 0) {
       const bounds = L.latLngBounds(data.map(item => [item.latitude, item.longitude]));
-      const map = document.querySelector('.leaflet-container')?._leaflet_map;
-      if (map) {
-        map.fitBounds(bounds);
-      }
+      map.fitBounds(bounds);
     }
-  }, [data]);
+  }, [data, map]);
 
+  return null;
+};
+
+const GpsMap = ({ data }: GpsMapProps) => {
+  const defaultPosition: [number, number] = [1.3521, 103.8198];
   const latestLocation = data[0];
 
   return (
     <MapContainer
       className="leaflet-container"
-      defaultCenter={defaultPosition}
-      defaultZoom={13}
+      center={defaultPosition}
+      zoom={13}
       style={{ height: "400px", width: "100%" }}
       scrollWheelZoom={false}
     >
       <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       {latestLocation && (
         <Marker position={[latestLocation.latitude, latestLocation.longitude]}>
@@ -55,6 +58,7 @@ const GpsMap = ({ data }: GpsMapProps) => {
           </Popup>
         </Marker>
       )}
+      <MapBoundsComponent data={data} />
     </MapContainer>
   );
 };
