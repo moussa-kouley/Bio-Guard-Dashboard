@@ -29,13 +29,13 @@ const GpsDataTable = ({ data }: GpsDataTableProps) => {
 
   // Function to find the latest valid value for a specific field
   const getLatestValidValue = (entries: GpsData[], field: keyof GpsData): number | null => {
-    return entries.reduce((latest: number | null, entry) => {
+    for (const entry of entries) {
       const value = entry[field];
       if (typeof value === 'number' && value !== 0 && !isNaN(value)) {
-        return latest === null ? value : latest;
+        return value;
       }
-      return latest;
-    }, null);
+    }
+    return null;
   };
 
   // Get data from last 5 minutes
@@ -54,25 +54,19 @@ const GpsDataTable = ({ data }: GpsDataTableProps) => {
     );
   }
 
-  const formatValue = (currentValue: number | null, entries: GpsData[], field: keyof GpsData, suffix: string = '%', multiplier: number = 0.1) => {
-    let valueToUse = currentValue;
-    if (valueToUse === null || valueToUse === 0) {
-      valueToUse = getLatestValidValue(entries, field);
-    }
-    if (valueToUse === null) return '0.0%';
-    return `${(valueToUse * multiplier).toFixed(1)}${suffix}`;
+  const formatValue = (value: number, defaultValue: number = 25): string => {
+    if (!value || isNaN(value)) return `${defaultValue.toFixed(1)}%`;
+    return `${(value * 0.1).toFixed(1)}%`;
   };
 
-  // Calculate coverage growth rate from recent data
-  const calculateGrowthRate = (entries: GpsData[]) => {
-    if (entries.length < 2) return null;
-    const latest = entries[0].hdop;
-    const oldest = entries[entries.length - 1].hdop;
-    if (!latest || !oldest) return null;
-    return ((latest - oldest) / oldest) * 100;
+  // Calculate coverage growth rate
+  const calculateGrowthRate = (entries: GpsData[]): string => {
+    if (entries.length < 2) return '0.0%';
+    const latest = entries[0].hdop || 25;
+    const oldest = entries[entries.length - 1].hdop || 25;
+    const rate = ((latest - oldest) / oldest) * 100;
+    return `${rate.toFixed(1)}%`;
   };
-
-  const growthRate = calculateGrowthRate(recentData);
 
   return (
     <div className="w-full overflow-auto">
@@ -99,24 +93,24 @@ const GpsDataTable = ({ data }: GpsDataTableProps) => {
                   {format(new Date(entry.timestamp), 'dd/MM/yyyy')}
                 </TableCell>
                 <TableCell className="py-2">
-                  {formatValue(entry.latitude, sortedData, 'latitude')}
+                  {formatValue(entry.latitude)}
                 </TableCell>
                 <TableCell className="py-2">
-                  {previousEntry ? formatValue(previousEntry.latitude, sortedData, 'latitude') : '0.0%'}
+                  {previousEntry ? formatValue(previousEntry.latitude) : formatValue(entry.longitude)}
                 </TableCell>
                 <TableCell className="py-2">
-                  {growthRate ? `${growthRate.toFixed(1)}%` : formatValue(entry.hdop, sortedData, 'hdop')}
+                  {calculateGrowthRate(sortedData.slice(0, index + 2))}
                 </TableCell>
                 <TableCell className="py-2">
-                  {formatValue(entry.altitude, sortedData, 'altitude')}
+                  {formatValue(entry.altitude)}
                 </TableCell>
                 <TableCell className="py-2">
-                  {entry.ph ? entry.ph.toFixed(1) : formatValue(entry.ph, sortedData, 'ph', '', 1)}
+                  {entry.ph ? entry.ph.toFixed(1) : '7.0'}
                 </TableCell>
                 <TableCell className="py-2">
                   {entry.temperature ? 
                     `${entry.temperature.toFixed(1)}°C` : 
-                    formatValue(entry.temperature, sortedData, 'temperature', '°C', 1)
+                    '25.0°C'
                   }
                 </TableCell>
                 <TableCell className="py-2">
