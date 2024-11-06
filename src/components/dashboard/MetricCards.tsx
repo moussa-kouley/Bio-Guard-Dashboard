@@ -9,14 +9,59 @@ interface MetricCardsProps {
 }
 
 export const MetricCards = ({ latestData, data }: MetricCardsProps) => {
-  const metrics = {
-    currentCoverage: "30%",
-    previousCoverage: "3.5%",
-    growthRate: "1.6%",
-    waterQuality: "-13%",
-    predictedCoverage: "34%",
-    temperature: "23°C"
+  // Filter data from last 20 minutes
+  const last20MinData = data.filter(entry => {
+    const entryTime = new Date(entry.timestamp).getTime();
+    const twentyMinutesAgo = new Date().getTime() - 20 * 60 * 1000;
+    return entryTime >= twentyMinutesAgo;
+  });
+
+  // Calculate metrics from the filtered data
+  const calculateMetrics = () => {
+    if (!last20MinData.length) return {
+      currentCoverage: "0%",
+      previousCoverage: "0%",
+      growthRate: "0%",
+      waterQuality: "0%",
+      predictedCoverage: "0%",
+      temperature: "0°C"
+    };
+
+    const avgLatitude = last20MinData.reduce((sum, entry) => sum + (entry.latitude || 0), 0) / last20MinData.length;
+    const avgLongitude = last20MinData.reduce((sum, entry) => sum + (entry.longitude || 0), 0) / last20MinData.length;
+    const avgTemp = last20MinData.reduce((sum, entry) => sum + (entry.temperature || 0), 0) / last20MinData.length;
+    const avgPh = last20MinData.reduce((sum, entry) => sum + (entry.ph || 0), 0) / last20MinData.length;
+
+    // Calculate current coverage (using latitude as a proxy)
+    const currentCoverage = (avgLatitude * 0.1).toFixed(1);
+    
+    // Calculate previous coverage (using longitude as a proxy)
+    const previousCoverage = (avgLongitude * 0.1).toFixed(1);
+    
+    // Calculate growth rate based on hdop
+    const growthRate = last20MinData.length > 0 
+      ? ((last20MinData[0].hdop || 0) * 0.1).toFixed(1)
+      : "0";
+
+    // Water quality based on pH
+    const waterQuality = ((avgPh - 7) * 10).toFixed(1);
+
+    // Predicted coverage based on altitude
+    const predictedCoverage = last20MinData.length > 0 
+      ? ((last20MinData[0].altitude || 0) * 0.1).toFixed(1)
+      : "0";
+
+    return {
+      currentCoverage: `${currentCoverage}%`,
+      previousCoverage: `${previousCoverage}%`,
+      growthRate: `${growthRate}%`,
+      waterQuality: `${waterQuality}%`,
+      predictedCoverage: `${predictedCoverage}%`,
+      temperature: `${avgTemp.toFixed(1)}°C`
+    };
   };
+
+  const metrics = calculateMetrics();
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
