@@ -22,12 +22,9 @@ const GpsMap = ({ data }: GpsMapProps) => {
   useEffect(() => {
     if (data.length > 0) {
       const bounds = L.latLngBounds(data.map(item => [item.latitude, item.longitude]));
-      const mapElement = document.querySelector('.map-container');
-      if (mapElement) {
-        const map = (mapElement as any)._leaflet;
-        if (map) {
-          map.fitBounds(bounds);
-        }
+      const map = document.querySelector('.leaflet-container')?._leaflet_map;
+      if (map) {
+        map.fitBounds(bounds);
       }
     }
   }, [data]);
@@ -36,9 +33,9 @@ const GpsMap = ({ data }: GpsMapProps) => {
 
   return (
     <MapContainer
-      className="map-container"
-      center={defaultPosition}
-      zoom={13}
+      className="leaflet-container"
+      defaultCenter={defaultPosition}
+      defaultZoom={13}
       style={{ height: "400px", width: "100%" }}
       scrollWheelZoom={false}
     >
