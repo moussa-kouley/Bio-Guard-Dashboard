@@ -18,7 +18,7 @@ interface GpsMapProps {
 
 const GpsMap = ({ data }: GpsMapProps) => {
   const mapRef = useRef<L.Map>(null);
-  const defaultCenter: [number, number] = [1.3521, 103.8198]; // Default center coordinates
+  const center: [number, number] = [1.3521, 103.8198]; // Default center coordinates
 
   useEffect(() => {
     if (data.length > 0 && mapRef.current) {
@@ -32,13 +32,14 @@ const GpsMap = ({ data }: GpsMapProps) => {
   return (
     <MapContainer
       ref={mapRef as any}
-      defaultCenter={defaultCenter}
+      center={center}
       zoom={13}
       style={{ height: "400px", width: "100%" }}
+      scrollWheelZoom={false}
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
       {latestLocation && (
         <Marker position={[latestLocation.latitude, latestLocation.longitude]}>
