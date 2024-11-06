@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -17,12 +17,15 @@ interface GpsMapProps {
 }
 
 const GpsMap = ({ data }: GpsMapProps) => {
-  const mapRef = useRef<L.Map>(null);
+  const defaultPosition: [number, number] = [1.3521, 103.8198];
 
   useEffect(() => {
-    if (data.length > 0 && mapRef.current) {
+    if (data.length > 0) {
       const bounds = L.latLngBounds(data.map(item => [item.latitude, item.longitude]));
-      mapRef.current.fitBounds(bounds);
+      const map = document.querySelector('.leaflet-container')?._leaflet_map;
+      if (map) {
+        map.fitBounds(bounds);
+      }
     }
   }, [data]);
 
@@ -30,14 +33,15 @@ const GpsMap = ({ data }: GpsMapProps) => {
 
   return (
     <MapContainer
-      ref={mapRef}
-      center={[51.505, -0.09]}
-      zoom={13}
+      className="leaflet-container"
+      defaultCenter={defaultPosition}
+      defaultZoom={13}
       style={{ height: "400px", width: "100%" }}
+      scrollWheelZoom={false}
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
       {latestLocation && (
         <Marker position={[latestLocation.latitude, latestLocation.longitude]}>

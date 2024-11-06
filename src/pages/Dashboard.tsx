@@ -1,5 +1,4 @@
 import { useToast } from "@/components/ui/use-toast";
-import io from "socket.io-client";
 import { format } from "date-fns";
 import {
   LineChart,
@@ -12,90 +11,110 @@ import {
   Area,
   AreaChart,
 } from "recharts";
-import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { MetricCards } from "@/components/dashboard/MetricCards";
+import { createClient } from '@supabase/supabase-js';
+import { useQuery } from '@tanstack/react-query';
 import type { GpsData } from "@/types/gps";
-import GpsDataTable from "@/components/GpsDataTable";
+import * as React from 'react';
+
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
+
+// Sample data to insert if table doesn't exist
+const sampleData = [
+  {
+    latitude: 1.3521,
+    longitude: 103.8198,
+    altitude: 14,
+    hdop: 1.2,
+    temperature: 28,
+    ph: 7.2,
+    dissolvedsolids: 450,
+    timestamp: new Date().toISOString(),
+    f_port: 1
+  },
+  // Add more sample entries as needed
+];
 
 const Dashboard = () => {
-  const [gpsData, setGpsData] = useState<GpsData[]>([]);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const serverUrl = import.meta.env.VITE_SERVER_URL || window.location.origin;
-    const socket = io(serverUrl, {
-      reconnectionAttempts: 5,
-      timeout: 10000,
-    });
+  const { data: gpsData = [], isError } = useQuery({
+    queryKey: ['gpsData'],
+    queryFn: async () => {
+      // Check if table exists
+      const { data: tableExists } = await supabase
+        .from('gps_data')
+        .select('count')
+        .limit(1);
 
-    const fetchInitialData = async () => {
-      try {
-        const response = await fetch(`${serverUrl}/gps-data`);
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
+      // If table doesn't exist or is empty, insert sample data
+      if (!tableExists || tableExists.length === 0) {
+        const { error: createError } = await supabase
+          .from('gps_data')
+          .insert(sampleData);
+
+        if (createError) {
+          console.error('Error inserting sample data:', createError);
         }
-        const data = await response.json();
-        setGpsData(data || []);
-      } catch (error) {
-        console.error('Failed to fetch GPS data:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch GPS data. Please try again later.",
-          variant: "destructive",
-        });
       }
-    };
 
-    socket.on("connect", () => {
-      console.log("Connected to WebSocket");
-    });
+      // Fetch data
+      const { data, error } = await supabase
+        .from('gps_data')
+        .select('*')
+        .order('timestamp', { ascending: false });
 
-    socket.on("connect_error", (error) => {
-      console.error("Socket connection error:", error);
-      toast({
-        title: "Connection Error",
-        description: "Failed to connect to real-time updates",
-        variant: "destructive",
-      });
-    });
+      if (error) throw error;
+      return data as GpsData[];
+    },
+    refetchInterval: 5000 // Refetch every 5 seconds
+  });
 
-    socket.on("gpsDataUpdate", (newData: GpsData) => {
-      if (newData) {
-        setGpsData(prev => [newData, ...prev]);
-      }
-    });
-
-    fetchInitialData();
+  // Subscribe to real-time changes
+  React.useEffect(() => {
+    const subscription = supabase
+      .channel('gps_data_changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'gps_data' },
+        (payload) => {
+          console.log('Real-time update received:', payload);
+        }
+      )
+      .subscribe();
 
     return () => {
-      socket.disconnect();
+      subscription.unsubscribe();
     };
-  }, [toast]);
+  }, []);
 
-  const getLatestData = () => {
-    return gpsData.length > 0 ? gpsData[0] : undefined;
-  };
+  if (isError) {
+    toast({
+      title: "Error",
+      description: "Failed to fetch data from the database",
+      variant: "destructive",
+    });
+  }
 
-  const latestData = getLatestData();
+  const latestData = gpsData[0];
 
-  // Mock data for charts
-  const growthData = [
-    { name: 'Jan', coverage: 15, growthRate: 0.8 },
-    { name: 'Feb', coverage: 18, growthRate: 1.2 },
-    { name: 'Mar', coverage: 25, growthRate: 1.5 },
-    { name: 'Apr', coverage: 28, growthRate: 1.8 },
-    { name: 'May', coverage: 30, growthRate: 2.0 },
-  ];
+  // Prepare data for charts
+  const growthData = gpsData.map(entry => ({
+    name: format(new Date(entry.timestamp), 'MMM dd'),
+    coverage: (entry.latitude * 0.1).toFixed(1),
+    growthRate: (entry.hdop * 0.1).toFixed(1)
+  }));
 
-  const waterQualityData = [
-    { name: 'Jan', ph: 7, dissolvedOxygen: 8, turbidity: 5 },
-    { name: 'Feb', ph: 6.8, dissolvedOxygen: 7.5, turbidity: 5.5 },
-    { name: 'Mar', ph: 6.9, dissolvedOxygen: 7.8, turbidity: 5.2 },
-    { name: 'Apr', ph: 7.1, dissolvedOxygen: 8.2, turbidity: 4.8 },
-    { name: 'May', ph: 7.0, dissolvedOxygen: 8.0, turbidity: 5.0 },
-  ];
+  const waterQualityData = gpsData.map(entry => ({
+    name: format(new Date(entry.timestamp), 'MMM dd'),
+    ph: entry.ph,
+    dissolvedOxygen: entry.dissolvedsolids / 100,
+    turbidity: entry.temperature / 10
+  }));
 
   return (
     <div className="p-6">

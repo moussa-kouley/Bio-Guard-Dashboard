@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { CalendarDays, Clock } from "lucide-react";
 import { format } from "date-fns";
-import io from "socket.io-client";
 import GpsMap from "@/components/GpsMap";
+import { createClient } from '@supabase/supabase-js';
+import { useQuery } from '@tanstack/react-query';
 
 interface GpsData {
   latitude: number;
@@ -15,61 +16,60 @@ interface GpsData {
   timestamp: string;
 }
 
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
+
 const Map = () => {
-  const [gpsData, setGpsData] = useState<GpsData[]>([]);
   const { toast } = useToast();
+  const [selectedRegion, setSelectedRegion] = useState("");
+  const [selectedSeverity, setSelectedSeverity] = useState("");
 
-  useEffect(() => {
-    // Use environment variable or fallback for the server URL
-    const serverUrl = import.meta.env.VITE_SERVER_URL || window.location.origin;
-    const socket = io(serverUrl, {
-      reconnectionAttempts: 5,
-      timeout: 10000,
-    });
+  const { data: gpsData = [], isError, error } = useQuery({
+    queryKey: ['gpsData'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('gps_data')
+        .select('*')
+        .order('timestamp', { ascending: false });
 
-    const fetchInitialData = async () => {
-      try {
-        const response = await fetch(`${serverUrl}/gps-data`);
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
+      if (error) throw error;
+      return data as GpsData[];
+    },
+    refetchInterval: 5000, // Refetch every 5 seconds
+  });
+
+  // Subscribe to real-time changes
+  React.useEffect(() => {
+    const subscription = supabase
+      .channel('gps_data_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'gps_data'
+        },
+        (payload) => {
+          // React Query will handle the cache update automatically on the next refetch
+          console.log('Real-time update received:', payload);
         }
-        const data = await response.json();
-        setGpsData(data || []);
-      } catch (error) {
-        console.error('Failed to fetch GPS data:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch GPS data. Please try again later.",
-          variant: "destructive",
-        });
-      }
-    };
-
-    socket.on("connect", () => {
-      console.log("Connected to WebSocket");
-    });
-
-    socket.on("connect_error", (error) => {
-      console.error("Socket connection error:", error);
-      toast({
-        title: "Connection Error",
-        description: "Failed to connect to real-time updates",
-        variant: "destructive",
-      });
-    });
-
-    socket.on("gpsDataUpdate", (newData: GpsData) => {
-      if (newData) {
-        setGpsData(prev => [newData, ...prev]);
-      }
-    });
-
-    fetchInitialData();
+      )
+      .subscribe();
 
     return () => {
-      socket.disconnect();
+      subscription.unsubscribe();
     };
-  }, [toast]);
+  }, []);
+
+  if (isError) {
+    toast({
+      title: "Error",
+      description: "Failed to fetch GPS data",
+      variant: "destructive",
+    });
+  }
 
   return (
     <div className="p-6 mt-16">
@@ -78,7 +78,8 @@ const Map = () => {
         <div className="flex gap-4">
           <select 
             className="border rounded-md p-2" 
-            defaultValue=""
+            value={selectedRegion}
+            onChange={(e) => setSelectedRegion(e.target.value)}
           >
             <option value="">All Regions</option>
             <option value="region1">Region 1</option>
@@ -86,7 +87,8 @@ const Map = () => {
           </select>
           <select 
             className="border rounded-md p-2" 
-            defaultValue=""
+            value={selectedSeverity}
+            onChange={(e) => setSelectedSeverity(e.target.value)}
           >
             <option value="">All Severities</option>
             <option value="high">High</option>
