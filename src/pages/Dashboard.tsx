@@ -17,6 +17,7 @@ import { MetricCards } from "@/components/dashboard/MetricCards";
 import { createClient } from '@supabase/supabase-js';
 import { useQuery } from '@tanstack/react-query';
 import type { GpsData } from "@/types/gps";
+import * as React from 'react';
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,

@@ -18,6 +18,7 @@ interface GpsMapProps {
 
 const GpsMap = ({ data }: GpsMapProps) => {
   const mapRef = useRef<L.Map>(null);
+  const defaultCenter: [number, number] = [1.3521, 103.8198]; // Default center coordinates
 
   useEffect(() => {
     if (data.length > 0 && mapRef.current) {
@@ -30,8 +31,8 @@ const GpsMap = ({ data }: GpsMapProps) => {
 
   return (
     <MapContainer
-      ref={mapRef}
-      center={[51.505, -0.09]}
+      ref={mapRef as any}
+      defaultCenter={defaultCenter}
       zoom={13}
       style={{ height: "400px", width: "100%" }}
     >
