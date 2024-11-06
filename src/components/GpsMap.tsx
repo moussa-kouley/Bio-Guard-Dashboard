@@ -21,9 +21,15 @@ const MapBoundsComponent = ({ data }: { data: GpsData[] }) => {
   const map = useMap();
 
   useEffect(() => {
-    if (data.length > 0) {
-      const bounds = L.latLngBounds(data.map(item => [item.latitude, item.longitude]));
-      map.fitBounds(bounds);
+    if (data.length > 0 && data[0].latitude && data[0].longitude) {
+      const bounds = L.latLngBounds(
+        data
+          .filter(item => item.latitude && item.longitude)
+          .map(item => [item.latitude, item.longitude])
+      );
+      if (bounds.isValid()) {
+        map.fitBounds(bounds);
+      }
     }
   }, [data, map]);
 
@@ -32,21 +38,26 @@ const MapBoundsComponent = ({ data }: { data: GpsData[] }) => {
 
 const GpsMap = ({ data }: GpsMapProps) => {
   const defaultPosition: [number, number] = [1.3521, 103.8198];
-  const latestLocation = data[0];
+  const latestLocation = data.length > 0 ? data[0] : null;
+
+  // Check if we have valid coordinates
+  const mapCenter = latestLocation && latestLocation.latitude && latestLocation.longitude
+    ? [latestLocation.latitude, latestLocation.longitude] as [number, number]
+    : defaultPosition;
 
   return (
     <MapContainer
       className="leaflet-container"
-      center={defaultPosition}
+      center={mapCenter}
       zoom={13}
       style={{ height: "400px", width: "100%" }}
       scrollWheelZoom={false}
     >
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
-      {latestLocation && (
+      {latestLocation && latestLocation.latitude && latestLocation.longitude && (
         <Marker position={[latestLocation.latitude, latestLocation.longitude]}>
           <Popup>
             <div>
