@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -16,26 +16,40 @@ interface GpsMapProps {
   data: GpsData[];
 }
 
-const GpsMap = ({ data }: GpsMapProps) => {
-  const defaultPosition: [number, number] = [1.3521, 103.8198];
+// Component to handle map bounds
+const MapBoundsComponent = ({ data }: { data: GpsData[] }) => {
+  const map = useMap();
 
   useEffect(() => {
-    if (data.length > 0) {
-      const bounds = L.latLngBounds(data.map(item => [item.latitude, item.longitude]));
-      const map = document.querySelector('.leaflet-container')?._leaflet_map;
-      if (map) {
+    if (data.length > 0 && data[0].latitude && data[0].longitude) {
+      const bounds = L.latLngBounds(
+        data
+          .filter(item => item.latitude && item.longitude)
+          .map(item => [item.latitude, item.longitude])
+      );
+      if (bounds.isValid()) {
         map.fitBounds(bounds);
       }
     }
-  }, [data]);
+  }, [data, map]);
 
-  const latestLocation = data[0];
+  return null;
+};
+
+const GpsMap = ({ data }: GpsMapProps) => {
+  const defaultPosition: [number, number] = [1.3521, 103.8198];
+  const latestLocation = data.length > 0 ? data[0] : null;
+
+  // Check if we have valid coordinates
+  const mapCenter = latestLocation && latestLocation.latitude && latestLocation.longitude
+    ? [latestLocation.latitude, latestLocation.longitude] as [number, number]
+    : defaultPosition;
 
   return (
     <MapContainer
       className="leaflet-container"
-      defaultCenter={defaultPosition}
-      defaultZoom={13}
+      center={mapCenter}
+      zoom={13}
       style={{ height: "400px", width: "100%" }}
       scrollWheelZoom={false}
     >
@@ -43,7 +57,7 @@ const GpsMap = ({ data }: GpsMapProps) => {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
-      {latestLocation && (
+      {latestLocation && latestLocation.latitude && latestLocation.longitude && (
         <Marker position={[latestLocation.latitude, latestLocation.longitude]}>
           <Popup>
             <div>
@@ -55,6 +69,7 @@ const GpsMap = ({ data }: GpsMapProps) => {
           </Popup>
         </Marker>
       )}
+      <MapBoundsComponent data={data} />
     </MapContainer>
   );
 };
