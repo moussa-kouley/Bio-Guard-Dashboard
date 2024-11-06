@@ -58,7 +58,7 @@ const Index = () => {
 
       {/* Right side with login form */}
       <div className="flex-1 flex items-center justify-center p-8 bg-gray-50">
-        <div className="max-w-md w-full space-y-8">
+        <div className="max-w-md w-full space-y-6">
           <div className="space-y-2">
             <h1 className="text-4xl font-bold">Welcome to BioGuard app.</h1>
             <h2 className="text-3xl">Log In</h2>
