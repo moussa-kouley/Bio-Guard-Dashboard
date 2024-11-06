@@ -38,6 +38,10 @@ const GpsDataTable = ({ data }: GpsDataTableProps) => {
     }, null);
   };
 
+  // Get data from last 5 minutes
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+  const recentData = data.filter(entry => new Date(entry.timestamp) >= fiveMinutesAgo);
+
   const sortedData = [...data]
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
     .slice(0, 5);
@@ -59,6 +63,17 @@ const GpsDataTable = ({ data }: GpsDataTableProps) => {
     return `${(valueToUse * multiplier).toFixed(1)}${suffix}`;
   };
 
+  // Calculate coverage growth rate from recent data
+  const calculateGrowthRate = (entries: GpsData[]) => {
+    if (entries.length < 2) return null;
+    const latest = entries[0].hdop;
+    const oldest = entries[entries.length - 1].hdop;
+    if (!latest || !oldest) return null;
+    return ((latest - oldest) / oldest) * 100;
+  };
+
+  const growthRate = calculateGrowthRate(recentData);
+
   return (
     <div className="w-full overflow-auto">
       <Table>
@@ -67,45 +82,49 @@ const GpsDataTable = ({ data }: GpsDataTableProps) => {
             <TableHead className="py-2">Date</TableHead>
             <TableHead className="py-2">Coverage</TableHead>
             <TableHead className="py-2">Previous Cover.</TableHead>
-            <TableHead className="py-2">Water Quality</TableHead>
             <TableHead className="py-2">Growth Rate</TableHead>
             <TableHead className="py-2">Predicted Cov.</TableHead>
+            <TableHead className="py-2">Water Quality</TableHead>
             <TableHead className="py-2">Water Temp.</TableHead>
-            <TableHead className="py-2">Data</TableHead>
+            <TableHead className="py-2">Time</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sortedData.map((entry, index) => (
-            <TableRow key={index} className="text-xs">
-              <TableCell className="py-2">
-                {format(new Date(entry.timestamp), 'dd/MM/yyyy')}
-              </TableCell>
-              <TableCell className="py-2">
-                {formatValue(entry.latitude, sortedData, 'latitude')}
-              </TableCell>
-              <TableCell className="py-2">
-                {formatValue(entry.longitude, sortedData, 'longitude')}
-              </TableCell>
-              <TableCell className="py-2">
-                {entry.ph ? entry.ph.toFixed(1) : formatValue(entry.ph, sortedData, 'ph', '', 1)}
-              </TableCell>
-              <TableCell className="py-2">
-                {formatValue(entry.hdop, sortedData, 'hdop')}
-              </TableCell>
-              <TableCell className="py-2">
-                {formatValue(entry.altitude, sortedData, 'altitude')}
-              </TableCell>
-              <TableCell className="py-2">
-                {entry.temperature ? 
-                  `${entry.temperature.toFixed(1)}°C` : 
-                  `${formatValue(entry.temperature, sortedData, 'temperature', '°C', 1)}`
-                }
-              </TableCell>
-              <TableCell className="py-2">
-                {format(new Date(entry.timestamp), 'HH:mm:ss')}
-              </TableCell>
-            </TableRow>
-          ))}
+          {sortedData.map((entry, index) => {
+            const previousEntry = sortedData[index + 1];
+            
+            return (
+              <TableRow key={index} className="text-xs">
+                <TableCell className="py-2">
+                  {format(new Date(entry.timestamp), 'dd/MM/yyyy')}
+                </TableCell>
+                <TableCell className="py-2">
+                  {formatValue(entry.latitude, sortedData, 'latitude')}
+                </TableCell>
+                <TableCell className="py-2">
+                  {previousEntry ? formatValue(previousEntry.latitude, sortedData, 'latitude') : '0.0%'}
+                </TableCell>
+                <TableCell className="py-2">
+                  {growthRate ? `${growthRate.toFixed(1)}%` : formatValue(entry.hdop, sortedData, 'hdop')}
+                </TableCell>
+                <TableCell className="py-2">
+                  {formatValue(entry.altitude, sortedData, 'altitude')}
+                </TableCell>
+                <TableCell className="py-2">
+                  {entry.ph ? entry.ph.toFixed(1) : formatValue(entry.ph, sortedData, 'ph', '', 1)}
+                </TableCell>
+                <TableCell className="py-2">
+                  {entry.temperature ? 
+                    `${entry.temperature.toFixed(1)}°C` : 
+                    formatValue(entry.temperature, sortedData, 'temperature', '°C', 1)
+                  }
+                </TableCell>
+                <TableCell className="py-2">
+                  {format(new Date(entry.timestamp), 'HH:mm:ss')}
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
