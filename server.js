@@ -3,10 +3,17 @@ const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+const io = socketIo(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 
 let gpsDataArray = [];
@@ -14,36 +21,50 @@ let gpsDataArray = [];
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
 
-const supabaseUrl = 'https://hgdnvwejokhlfdwymtyq.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhnZG52d2Vqb2tobGZkd3ltdHlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3MTAxMTYsImV4cCI6MjA0NjI4NjExNn0.tRVa2DVuEP-qc08xdwoVkmwmA2zwptTs0imUaU2Mmxc';
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Set up Supabase real-time subscription
-const setupRealtimeSubscription = () => {
-  const subscription = supabase
-    .channel('gps_data_changes')
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'gps_data'
-      },
-      (payload) => {
-        const newData = payload.new;
-        if (newData) {
-          gpsDataArray.unshift(newData);
-          io.emit('gpsDataUpdate', newData);
+// Set up Supabase real-time subscription with error handling
+const setupRealtimeSubscription = async () => {
+  try {
+    const subscription = supabase
+      .channel('gps_data_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'gps_data'
+        },
+        (payload) => {
+          const newData = payload.new;
+          if (newData) {
+            gpsDataArray.unshift(newData);
+            io.emit('gpsDataUpdate', newData);
+          }
         }
-      }
-    )
-    .subscribe();
+      )
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+        
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to real-time changes');
+        } else if (status === 'CLOSED') {
+          console.log('Subscription closed, attempting to reconnect...');
+          setTimeout(setupRealtimeSubscription, 5000); // Retry after 5 seconds
+        }
+      });
 
-  return subscription;
+    return subscription;
+  } catch (error) {
+    console.error('Error setting up real-time subscription:', error);
+    setTimeout(setupRealtimeSubscription, 5000); // Retry after 5 seconds
+  }
 };
 
-// Initial data fetch - now fetching all records
+// Initial data fetch with error handling
 const fetchInitialData = async () => {
   try {
     const { data, error } = await supabase
@@ -53,20 +74,35 @@ const fetchInitialData = async () => {
 
     if (error) {
       console.error('Error fetching initial data:', error);
-    } else {
-      gpsDataArray = data || [];
-      console.log(`Fetched ${gpsDataArray.length} records from database`);
+      return;
     }
+
+    gpsDataArray = data || [];
+    console.log(`Fetched ${gpsDataArray.length} records from database`);
   } catch (error) {
     console.error('Error fetching initial data:', error);
   }
 };
 
-// Initialize data and subscriptions
+// Initialize data and subscriptions with connection status logging
 (async () => {
+  console.log('Initializing server...');
   await fetchInitialData();
-  setupRealtimeSubscription();
+  const subscription = await setupRealtimeSubscription();
+  
+  if (subscription) {
+    console.log('Real-time subscription initialized successfully');
+  }
 })();
+
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log('Client connected');
+  
+  socket.on('disconnect', () => {
+    console.log('Client disconnected');
+  });
+});
 
 app.get('/', (req, res) => {
   res.render('index', { gpsDataArray });
