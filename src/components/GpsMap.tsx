@@ -48,14 +48,14 @@ const GpsMap = ({ data }: GpsMapProps) => {
   return (
     <MapContainer
       className="leaflet-container"
-      center={mapCenter}
-      zoom={13}
+      defaultCenter={mapCenter}
+      defaultZoom={13}
       style={{ height: "400px", width: "100%" }}
       scrollWheelZoom={false}
     >
       <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       {latestLocation && latestLocation.latitude && latestLocation.longitude && (
         <Marker position={[latestLocation.latitude, latestLocation.longitude]}>

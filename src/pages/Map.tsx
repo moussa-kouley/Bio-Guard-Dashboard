@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { CalendarDays, Clock } from "lucide-react";
@@ -25,6 +25,12 @@ const Map = () => {
   const { toast } = useToast();
   const [selectedRegion, setSelectedRegion] = useState("");
   const [selectedSeverity, setSelectedSeverity] = useState("");
+  const lastValidMeasurements = useRef({
+    temperature: null as number | null,
+    ph: null as number | null,
+    dissolvedsolids: null as number | null,
+    timestamp: null as string | null,
+  });
 
   const { data: gpsData = [], isError, error } = useQuery({
     queryKey: ['gpsData'],
@@ -37,10 +43,26 @@ const Map = () => {
       if (error) throw error;
       return data as GpsData[];
     },
-    refetchInterval: 5000, // Refetch every 5 seconds
+    refetchInterval: 5000,
   });
 
-  // Subscribe to real-time changes
+  // Update last valid measurements when new data arrives
+  React.useEffect(() => {
+    if (gpsData && gpsData[0]) {
+      const latestData = gpsData[0];
+      if (typeof latestData.temperature === 'number' && !isNaN(latestData.temperature)) {
+        lastValidMeasurements.current.temperature = latestData.temperature;
+      }
+      if (typeof latestData.ph === 'number' && !isNaN(latestData.ph)) {
+        lastValidMeasurements.current.ph = latestData.ph;
+      }
+      if (typeof latestData.dissolvedsolids === 'number' && !isNaN(latestData.dissolvedsolids)) {
+        lastValidMeasurements.current.dissolvedsolids = latestData.dissolvedsolids;
+      }
+      lastValidMeasurements.current.timestamp = latestData.timestamp;
+    }
+  }, [gpsData]);
+
   React.useEffect(() => {
     const subscription = supabase
       .channel('gps_data_changes')
@@ -142,30 +164,38 @@ const Map = () => {
           <Card className="p-4">
             <h3 className="font-semibold mb-2">Latest Measurements</h3>
             <div className="space-y-2">
-              {gpsData[0] ? (
-                <>
-                  <div className="flex justify-between">
-                    <span>Temperature</span>
-                    <span className="font-medium">{gpsData[0].temperature}°C</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>PH Level</span>
-                    <span className="font-medium">{gpsData[0].ph}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Dissolved Solids</span>
-                    <span className="font-medium">{gpsData[0].dissolvedsolids}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Last Update</span>
-                    <span className="font-medium">
-                      {format(new Date(gpsData[0].timestamp), 'HH:mm:ss')}
-                    </span>
-                  </div>
-                </>
-              ) : (
-                <p>No data available</p>
-              )}
+              <div className="flex justify-between">
+                <span>Temperature</span>
+                <span className="font-medium">
+                  {lastValidMeasurements.current.temperature !== null 
+                    ? `${lastValidMeasurements.current.temperature.toFixed(1)}°C`
+                    : 'N/A'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>PH Level</span>
+                <span className="font-medium">
+                  {lastValidMeasurements.current.ph !== null 
+                    ? lastValidMeasurements.current.ph.toFixed(1)
+                    : 'N/A'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Dissolved Solids</span>
+                <span className="font-medium">
+                  {lastValidMeasurements.current.dissolvedsolids !== null 
+                    ? lastValidMeasurements.current.dissolvedsolids.toFixed(1)
+                    : 'N/A'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Last Update</span>
+                <span className="font-medium">
+                  {lastValidMeasurements.current.timestamp 
+                    ? format(new Date(lastValidMeasurements.current.timestamp), 'HH:mm:ss')
+                    : 'N/A'}
+                </span>
+              </div>
             </div>
           </Card>
         </div>
