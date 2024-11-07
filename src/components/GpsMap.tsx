@@ -39,7 +39,7 @@ const GpsMap = ({ data }: GpsMapProps) => {
   const defaultPosition: [number, number] = [1.3521, 103.8198]; // Singapore coordinates as fallback
 
   // Create custom icon using Lucide icon
-  const customIcon = new L.DivIcon({
+  const customIcon = L.divIcon({
     html: renderToString(<MapPin className="w-8 h-8 text-primary" />),
     className: 'custom-marker-icon',
     iconSize: [32, 32],
@@ -69,14 +69,14 @@ const GpsMap = ({ data }: GpsMapProps) => {
 
   return (
     <MapContainer
-      center={initialCenter}
-      zoom={13}
+      defaultCenter={initialCenter}
+      defaultZoom={13}
       style={{ height: "400px", width: "100%" }}
       scrollWheelZoom={false}
     >
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
       {data.map((point, index) => (
         point.latitude && point.longitude ? (
