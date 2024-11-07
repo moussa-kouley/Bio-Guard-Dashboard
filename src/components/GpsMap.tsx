@@ -3,19 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useToast } from "./ui/use-toast";
-
-interface GpsData {
-  latitude: number;
-  longitude: number;
-  temperature: number;
-  ph: number;
-  dissolvedsolids: number;
-  timestamp: string;
-}
-
-interface GpsMapProps {
-  data: GpsData[];
-}
+import type { GpsData } from "@/types/gps";
 
 // Component to handle map bounds
 const MapBoundsComponent = ({ data, currentLocation }: { data: GpsData[], currentLocation: [number, number] | null }) => {
@@ -39,14 +27,17 @@ const MapBoundsComponent = ({ data, currentLocation }: { data: GpsData[], curren
   return null;
 };
 
+interface GpsMapProps {
+  data: GpsData[];
+}
+
 const GpsMap = ({ data }: GpsMapProps) => {
   const { toast } = useToast();
   const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
   const defaultPosition: [number, number] = [1.3521, 103.8198]; // Singapore coordinates as fallback
-  const latestLocation = data.length > 0 ? data[0] : null;
 
   useEffect(() => {
-    if (!latestLocation) {
+    if (data.length === 0) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setCurrentLocation([position.coords.latitude, position.coords.longitude]);
@@ -60,15 +51,16 @@ const GpsMap = ({ data }: GpsMapProps) => {
         }
       );
     }
-  }, [latestLocation, toast]);
+  }, [data.length, toast]);
 
-  const mapCenter = latestLocation && latestLocation.latitude && latestLocation.longitude
-    ? [latestLocation.latitude, latestLocation.longitude] as [number, number]
+  const initialCenter = data.length > 0 && data[0].latitude && data[0].longitude
+    ? [data[0].latitude, data[0].longitude] as [number, number]
     : currentLocation || defaultPosition;
 
   return (
     <MapContainer
-      center={mapCenter}
+      key={`${initialCenter[0]}-${initialCenter[1]}`}
+      center={initialCenter}
       zoom={13}
       style={{ height: "400px", width: "100%" }}
       scrollWheelZoom={false}
@@ -77,22 +69,33 @@ const GpsMap = ({ data }: GpsMapProps) => {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
-      {latestLocation && latestLocation.latitude && latestLocation.longitude ? (
-        <Marker position={[latestLocation.latitude, latestLocation.longitude]}>
-          <Popup>
-            <div>
-              <p>Temperature: {latestLocation.temperature}°C</p>
-              <p>PH: {latestLocation.ph}</p>
-              <p>Dissolved Solids: {latestLocation.dissolvedsolids}</p>
-              <p>Timestamp: {new Date(latestLocation.timestamp).toLocaleString()}</p>
-            </div>
-          </Popup>
-        </Marker>
-      ) : currentLocation && (
+      {data.map((point, index) => (
+        point.latitude && point.longitude ? (
+          <Marker key={index} position={[point.latitude, point.longitude]}>
+            <Popup>
+              <div className="space-y-2">
+                <h3 className="font-semibold">GPS Data Point {index + 1}</h3>
+                <p><strong>Latitude:</strong> {point.latitude.toFixed(6)}</p>
+                <p><strong>Longitude:</strong> {point.longitude.toFixed(6)}</p>
+                <p><strong>Altitude:</strong> {point.altitude ? `${point.altitude}m` : 'N/A'}</p>
+                <p><strong>HDOP:</strong> {point.hdop || 'N/A'}</p>
+                <p><strong>Temperature:</strong> {point.temperature ? `${point.temperature}°C` : 'N/A'}</p>
+                <p><strong>pH:</strong> {point.ph || 'N/A'}</p>
+                <p><strong>Dissolved Solids:</strong> {point.dissolvedsolids || 'N/A'}</p>
+                <p><strong>Port:</strong> {point.f_port || 'N/A'}</p>
+                <p><strong>Timestamp:</strong> {new Date(point.timestamp).toLocaleString()}</p>
+              </div>
+            </Popup>
+          </Marker>
+        ) : null
+      ))}
+      {currentLocation && data.length === 0 && (
         <Marker position={currentLocation}>
           <Popup>
             <div>
-              <p>Current Location</p>
+              <h3 className="font-semibold">Current Location</h3>
+              <p><strong>Latitude:</strong> {currentLocation[0].toFixed(6)}</p>
+              <p><strong>Longitude:</strong> {currentLocation[1].toFixed(6)}</p>
             </div>
           </Popup>
         </Marker>
