@@ -8,7 +8,17 @@ interface Measurements {
   timestamp: string | null;
 }
 
-export const LatestMeasurements = ({ measurements }: { measurements: Measurements }) => {
+export const LatestMeasurements = ({ measurements }: { measurements?: Measurements }) => {
+  // If measurements is undefined, use default values
+  const defaultMeasurements: Measurements = {
+    temperature: null,
+    ph: null,
+    dissolvedsolids: null,
+    timestamp: null
+  };
+
+  const data = measurements || defaultMeasurements;
+
   return (
     <Card className="p-4">
       <h3 className="font-semibold mb-2">Latest Measurements</h3>
@@ -16,32 +26,32 @@ export const LatestMeasurements = ({ measurements }: { measurements: Measurement
         <div className="flex justify-between">
           <span>Temperature</span>
           <span className="font-medium">
-            {measurements.temperature !== null 
-              ? `${measurements.temperature.toFixed(1)}°C`
+            {data.temperature !== null 
+              ? `${data.temperature.toFixed(1)}°C`
               : 'N/A'}
           </span>
         </div>
         <div className="flex justify-between">
           <span>PH Level</span>
           <span className="font-medium">
-            {measurements.ph !== null 
-              ? measurements.ph.toFixed(1)
+            {data.ph !== null 
+              ? data.ph.toFixed(1)
               : 'N/A'}
           </span>
         </div>
         <div className="flex justify-between">
           <span>Dissolved Solids</span>
           <span className="font-medium">
-            {measurements.dissolvedsolids !== null 
-              ? measurements.dissolvedsolids.toFixed(1)
+            {data.dissolvedsolids !== null 
+              ? data.dissolvedsolids.toFixed(1)
               : 'N/A'}
           </span>
         </div>
         <div className="flex justify-between">
           <span>Last Update</span>
           <span className="font-medium">
-            {measurements.timestamp 
-              ? format(new Date(measurements.timestamp), 'HH:mm:ss')
+            {data.timestamp 
+              ? format(new Date(data.timestamp), 'HH:mm:ss')
               : 'N/A'}
           </span>
         </div>
