@@ -4,6 +4,8 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useToast } from "./ui/use-toast";
 import type { GpsData } from "@/types/gps";
+import { MapPin } from "lucide-react";
+import { renderToString } from "react-dom/server";
 
 // Component to handle map bounds
 const MapBoundsComponent = ({ data, currentLocation }: { data: GpsData[], currentLocation: [number, number] | null }) => {
@@ -36,6 +38,14 @@ const GpsMap = ({ data }: GpsMapProps) => {
   const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
   const defaultPosition: [number, number] = [1.3521, 103.8198]; // Singapore coordinates as fallback
 
+  // Create custom icon using Lucide icon
+  const customIcon = L.divIcon({
+    html: renderToString(<MapPin className="w-8 h-8 text-primary" />),
+    className: 'custom-marker-icon',
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+  });
+
   useEffect(() => {
     if (data.length === 0) {
       navigator.geolocation.getCurrentPosition(
@@ -59,7 +69,6 @@ const GpsMap = ({ data }: GpsMapProps) => {
 
   return (
     <MapContainer
-      key={`${initialCenter[0]}-${initialCenter[1]}`}
       center={initialCenter}
       zoom={13}
       style={{ height: "400px", width: "100%" }}
@@ -71,7 +80,11 @@ const GpsMap = ({ data }: GpsMapProps) => {
       />
       {data.map((point, index) => (
         point.latitude && point.longitude ? (
-          <Marker key={index} position={[point.latitude, point.longitude]}>
+          <Marker 
+            key={index} 
+            position={[point.latitude, point.longitude]}
+            icon={customIcon}
+          >
             <Popup>
               <div className="space-y-2">
                 <h3 className="font-semibold">GPS Data Point {index + 1}</h3>
@@ -90,7 +103,7 @@ const GpsMap = ({ data }: GpsMapProps) => {
         ) : null
       ))}
       {currentLocation && data.length === 0 && (
-        <Marker position={currentLocation}>
+        <Marker position={currentLocation} icon={customIcon}>
           <Popup>
             <div>
               <h3 className="font-semibold">Current Location</h3>
