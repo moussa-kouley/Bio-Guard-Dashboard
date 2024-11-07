@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { CalendarDays, Clock } from "lucide-react";
@@ -6,15 +6,8 @@ import { format } from "date-fns";
 import GpsMap from "@/components/GpsMap";
 import { createClient } from '@supabase/supabase-js';
 import { useQuery } from '@tanstack/react-query';
-
-interface GpsData {
-  latitude: number;
-  longitude: number;
-  temperature: number;
-  ph: number;
-  dissolvedsolids: number;
-  timestamp: string;
-}
+import { MapFilters } from "@/components/map/MapFilters";
+import { LatestMeasurements } from "@/components/map/LatestMeasurements";
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -25,14 +18,14 @@ const Map = () => {
   const { toast } = useToast();
   const [selectedRegion, setSelectedRegion] = useState("");
   const [selectedSeverity, setSelectedSeverity] = useState("");
-  const lastValidMeasurements = useRef({
+  const lastValidMeasurements = React.useRef({
     temperature: null as number | null,
     ph: null as number | null,
     dissolvedsolids: null as number | null,
     timestamp: null as string | null,
   });
 
-  const { data: gpsData = [], isError, error } = useQuery({
+  const { data: gpsData = [], isError } = useQuery({
     queryKey: ['gpsData'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -41,7 +34,7 @@ const Map = () => {
         .order('timestamp', { ascending: false });
 
       if (error) throw error;
-      return data as GpsData[];
+      return data;
     },
     refetchInterval: 5000,
   });
@@ -63,28 +56,6 @@ const Map = () => {
     }
   }, [gpsData]);
 
-  React.useEffect(() => {
-    const subscription = supabase
-      .channel('gps_data_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'gps_data'
-        },
-        (payload) => {
-          // React Query will handle the cache update automatically on the next refetch
-          console.log('Real-time update received:', payload);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
   if (isError) {
     toast({
       title: "Error",
@@ -97,39 +68,18 @@ const Map = () => {
     <div className="p-6 mt-16">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Water Hyacinth Map</h1>
-        <div className="flex gap-4">
-          <select 
-            className="border rounded-md p-2" 
-            value={selectedRegion}
-            onChange={(e) => setSelectedRegion(e.target.value)}
-          >
-            <option value="">All Regions</option>
-            <option value="region1">Region 1</option>
-            <option value="region2">Region 2</option>
-          </select>
-          <select 
-            className="border rounded-md p-2" 
-            value={selectedSeverity}
-            onChange={(e) => setSelectedSeverity(e.target.value)}
-          >
-            <option value="">All Severities</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
-        </div>
+        <MapFilters
+          selectedRegion={selectedRegion}
+          selectedSeverity={selectedSeverity}
+          onRegionChange={setSelectedRegion}
+          onSeverityChange={setSelectedSeverity}
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="md:col-span-3 space-y-6">
           <Card className="h-[600px]">
-            {gpsData.length > 0 ? (
-              <GpsMap data={gpsData} />
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <p>No GPS data available</p>
-              </div>
-            )}
+            <GpsMap data={gpsData} />
           </Card>
 
           <div className="grid grid-cols-6 gap-4">
@@ -161,43 +111,7 @@ const Map = () => {
         </div>
 
         <div className="space-y-4">
-          <Card className="p-4">
-            <h3 className="font-semibold mb-2">Latest Measurements</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span>Temperature</span>
-                <span className="font-medium">
-                  {lastValidMeasurements.current.temperature !== null 
-                    ? `${lastValidMeasurements.current.temperature.toFixed(1)}°C`
-                    : 'N/A'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>PH Level</span>
-                <span className="font-medium">
-                  {lastValidMeasurements.current.ph !== null 
-                    ? lastValidMeasurements.current.ph.toFixed(1)
-                    : 'N/A'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Dissolved Solids</span>
-                <span className="font-medium">
-                  {lastValidMeasurements.current.dissolvedsolids !== null 
-                    ? lastValidMeasurements.current.dissolvedsolids.toFixed(1)
-                    : 'N/A'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Last Update</span>
-                <span className="font-medium">
-                  {lastValidMeasurements.current.timestamp 
-                    ? format(new Date(lastValidMeasurements.current.timestamp), 'HH:mm:ss')
-                    : 'N/A'}
-                </span>
-              </div>
-            </div>
-          </Card>
+          <LatestMeasurements measurements={lastValidMeasurements.current} />
         </div>
       </div>
     </div>
