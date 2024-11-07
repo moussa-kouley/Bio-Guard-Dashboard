@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useToast } from "./ui/use-toast";
@@ -11,18 +11,27 @@ interface GpsMapProps {
   data: GpsData[];
 }
 
+// Create custom icon using Lucide icon
+const customIcon = new L.DivIcon({
+  html: renderToString(<MapPin className="w-8 h-8 text-primary" />),
+  className: 'custom-marker-icon',
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+});
+
+// Component to update map view when center changes
+function MapUpdater({ center }: { center: L.LatLngExpression }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center);
+  }, [center, map]);
+  return null;
+}
+
 const GpsMap = ({ data }: GpsMapProps) => {
   const { toast } = useToast();
   const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
   const defaultPosition: [number, number] = [1.3521, 103.8198]; // Singapore coordinates as fallback
-
-  // Create custom icon using Lucide icon
-  const customIcon = new L.DivIcon({
-    html: renderToString(<MapPin className="w-8 h-8 text-primary" />),
-    className: 'custom-marker-icon',
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-  });
 
   useEffect(() => {
     if (data.length === 0) {
@@ -42,25 +51,26 @@ const GpsMap = ({ data }: GpsMapProps) => {
   }, [data.length, toast]);
 
   const initialCenter = data.length > 0 && data[0].latitude && data[0].longitude
-    ? [data[0].latitude, data[0].longitude] as [number, number]
+    ? [data[0].latitude, data[0].longitude] as L.LatLngExpression
     : currentLocation || defaultPosition;
 
   return (
     <MapContainer
-      center={initialCenter}
-      zoom={13}
       style={{ height: "100%", width: "100%" }}
+      zoom={13}
       scrollWheelZoom={false}
+      center={defaultPosition}
     >
+      <MapUpdater center={initialCenter} />
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
       {data.map((point, index) => (
         point.latitude && point.longitude ? (
           <Marker 
             key={index} 
-            position={[point.latitude, point.longitude] as [number, number]}
+            position={[point.latitude, point.longitude] as L.LatLngExpression}
             icon={customIcon}
           >
             <Popup>
@@ -82,7 +92,7 @@ const GpsMap = ({ data }: GpsMapProps) => {
       ))}
       {currentLocation && data.length === 0 && (
         <Marker 
-          position={currentLocation}
+          position={currentLocation as L.LatLngExpression}
           icon={customIcon}
         >
           <Popup>
