@@ -39,7 +39,7 @@ const GpsMap = ({ data }: GpsMapProps) => {
   const defaultPosition: [number, number] = [1.3521, 103.8198]; // Singapore coordinates as fallback
 
   // Create custom icon using Lucide icon
-  const customIcon = L.divIcon({
+  const customIcon = new L.DivIcon({
     html: renderToString(<MapPin className="w-8 h-8 text-primary" />),
     className: 'custom-marker-icon',
     iconSize: [32, 32],
