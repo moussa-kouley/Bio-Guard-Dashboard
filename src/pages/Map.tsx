@@ -96,7 +96,7 @@ const Map = () => {
               </div>
             </Card>
             <Card className="p-4 hover:bg-primary/10 cursor-pointer transition-colors text-center">
-              <span className="font-medium">Current</span>
+              <span className="font-medium">Current Water Hyacinth</span>
             </Card>
             <Card className="p-4 hover:bg-primary/10 cursor-pointer transition-colors text-center">
               <span className="font-medium">Prediction 12 hours</span>
