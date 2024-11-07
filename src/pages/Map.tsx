@@ -2,12 +2,13 @@ import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { CalendarDays, Clock } from "lucide-react";
-import { format } from "date-fns";
+import { format, addDays, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import GpsMap from "@/components/GpsMap";
 import { createClient } from '@supabase/supabase-js';
 import { useQuery } from '@tanstack/react-query';
 import { MapFilters } from "@/components/map/MapFilters";
 import { LatestMeasurements } from "@/components/map/LatestMeasurements";
+import type { GpsData } from "@/types/gps";
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -18,12 +19,7 @@ const Map = () => {
   const { toast } = useToast();
   const [selectedRegion, setSelectedRegion] = useState("");
   const [selectedSeverity, setSelectedSeverity] = useState("");
-  const lastValidMeasurements = React.useRef({
-    temperature: null as number | null,
-    ph: null as number | null,
-    dissolvedsolids: null as number | null,
-    timestamp: null as string | null,
-  });
+  const [timeFilter, setTimeFilter] = useState("current");
 
   const { data: gpsData = [], isError } = useQuery({
     queryKey: ['gpsData'],
@@ -34,27 +30,53 @@ const Map = () => {
         .order('timestamp', { ascending: false });
 
       if (error) throw error;
-      return data;
+      return data as GpsData[];
     },
-    refetchInterval: 5000,
+    refetchInterval: 5000
   });
 
-  // Update last valid measurements when new data arrives
-  React.useEffect(() => {
-    if (gpsData && gpsData[0]) {
-      const latestData = gpsData[0];
-      if (typeof latestData.temperature === 'number' && !isNaN(latestData.temperature)) {
-        lastValidMeasurements.current.temperature = latestData.temperature;
-      }
-      if (typeof latestData.ph === 'number' && !isNaN(latestData.ph)) {
-        lastValidMeasurements.current.ph = latestData.ph;
-      }
-      if (typeof latestData.dissolvedsolids === 'number' && !isNaN(latestData.dissolvedsolids)) {
-        lastValidMeasurements.current.dissolvedsolids = latestData.dissolvedsolids;
-      }
-      lastValidMeasurements.current.timestamp = latestData.timestamp;
+  const filterDataByTime = (data: GpsData[]) => {
+    const today = new Date();
+    
+    switch (timeFilter) {
+      case "current":
+        return data.filter(item => {
+          const itemDate = new Date(item.timestamp);
+          return isWithinInterval(itemDate, {
+            start: startOfDay(today),
+            end: endOfDay(today)
+          });
+        });
+      case "1day":
+        return data.filter(item => {
+          const itemDate = new Date(item.timestamp);
+          return isWithinInterval(itemDate, {
+            start: startOfDay(addDays(today, 1)),
+            end: endOfDay(addDays(today, 1))
+          });
+        });
+      case "2days":
+        return data.filter(item => {
+          const itemDate = new Date(item.timestamp);
+          return isWithinInterval(itemDate, {
+            start: startOfDay(addDays(today, 2)),
+            end: endOfDay(addDays(today, 2))
+          });
+        });
+      case "3days":
+        return data.filter(item => {
+          const itemDate = new Date(item.timestamp);
+          return isWithinInterval(itemDate, {
+            start: startOfDay(addDays(today, 3)),
+            end: endOfDay(addDays(today, 3))
+          });
+        });
+      default:
+        return data;
     }
-  }, [gpsData]);
+  };
+
+  const filteredData = filterDataByTime(gpsData);
 
   if (isError) {
     toast({
@@ -79,7 +101,7 @@ const Map = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="md:col-span-3 space-y-6">
           <Card className="h-[600px]">
-            <GpsMap data={gpsData} />
+            <GpsMap data={filteredData} />
           </Card>
 
           <div className="grid grid-cols-6 gap-4">
@@ -95,23 +117,35 @@ const Map = () => {
                 </div>
               </div>
             </Card>
-            <Card className="p-4 hover:bg-primary/10 cursor-pointer transition-colors text-center">
+            <Card 
+              className={`p-4 cursor-pointer transition-colors text-center ${timeFilter === 'current' ? 'bg-primary/10' : 'hover:bg-primary/10'}`}
+              onClick={() => setTimeFilter('current')}
+            >
               <span className="font-medium">Current</span>
             </Card>
-            <Card className="p-4 hover:bg-primary/10 cursor-pointer transition-colors text-center">
-              <span className="font-medium">Prediction 12 hours</span>
-            </Card>
-            <Card className="p-4 hover:bg-primary/10 cursor-pointer transition-colors text-center">
+            <Card 
+              className={`p-4 cursor-pointer transition-colors text-center ${timeFilter === '1day' ? 'bg-primary/10' : 'hover:bg-primary/10'}`}
+              onClick={() => setTimeFilter('1day')}
+            >
               <span className="font-medium">Prediction 1 day</span>
             </Card>
-            <Card className="p-4 hover:bg-primary/10 cursor-pointer transition-colors text-center">
+            <Card 
+              className={`p-4 cursor-pointer transition-colors text-center ${timeFilter === '2days' ? 'bg-primary/10' : 'hover:bg-primary/10'}`}
+              onClick={() => setTimeFilter('2days')}
+            >
+              <span className="font-medium">Prediction 2 days</span>
+            </Card>
+            <Card 
+              className={`p-4 cursor-pointer transition-colors text-center ${timeFilter === '3days' ? 'bg-primary/10' : 'hover:bg-primary/10'}`}
+              onClick={() => setTimeFilter('3days')}
+            >
               <span className="font-medium">Prediction 3 days</span>
             </Card>
           </div>
         </div>
 
         <div className="space-y-4">
-          <LatestMeasurements measurements={lastValidMeasurements.current} />
+          <LatestMeasurements measurements={filteredData[0]} />
         </div>
       </div>
     </div>

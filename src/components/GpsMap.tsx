@@ -69,8 +69,8 @@ const GpsMap = ({ data }: GpsMapProps) => {
 
   return (
     <MapContainer
-      center={initialCenter}
-      zoom={13}
+      defaultCenter={initialCenter}
+      defaultZoom={13}
       style={{ height: "400px", width: "100%" }}
       scrollWheelZoom={false}
     >
