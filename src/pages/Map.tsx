@@ -18,6 +18,7 @@ const Map = () => {
   const { toast } = useToast();
   const [selectedRegion, setSelectedRegion] = useState("");
   const [selectedSeverity, setSelectedSeverity] = useState("");
+  const [selectedTimeframe, setSelectedTimeframe] = useState("current"); // "current", "12h", "1d", "3d"
   const lastValidMeasurements = React.useRef({
     temperature: null as number | null,
     ph: null as number | null,
@@ -26,13 +27,27 @@ const Map = () => {
   });
 
   const { data: gpsData = [], isError } = useQuery({
-    queryKey: ['gpsData'],
+    queryKey: ['gpsData', selectedTimeframe],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('gps_data')
         .select('*')
         .order('timestamp', { ascending: false });
 
+      // Apply timeframe filter
+      const now = new Date();
+      if (selectedTimeframe === "12h") {
+        const twelveHoursAgo = new Date(now.getTime() - (12 * 60 * 60 * 1000));
+        query = query.gte('timestamp', twelveHoursAgo.toISOString());
+      } else if (selectedTimeframe === "1d") {
+        const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+        query = query.gte('timestamp', oneDayAgo.toISOString());
+      } else if (selectedTimeframe === "3d") {
+        const threeDaysAgo = new Date(now.getTime() - (3 * 24 * 60 * 60 * 1000));
+        query = query.gte('timestamp', threeDaysAgo.toISOString());
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
@@ -55,6 +70,10 @@ const Map = () => {
       lastValidMeasurements.current.timestamp = latestData.timestamp;
     }
   }, [gpsData]);
+
+  const handleTimeframeClick = (timeframe: string) => {
+    setSelectedTimeframe(timeframe);
+  };
 
   if (isError) {
     toast({
@@ -95,16 +114,36 @@ const Map = () => {
                 </div>
               </div>
             </Card>
-            <Card className="p-4 hover:bg-primary/10 cursor-pointer transition-colors text-center">
+            <Card 
+              className={`p-4 cursor-pointer transition-colors text-center ${
+                selectedTimeframe === "current" ? "bg-primary text-primary-foreground" : "hover:bg-primary/10"
+              }`}
+              onClick={() => handleTimeframeClick("current")}
+            >
               <span className="font-medium">Current Water Hyacinth</span>
             </Card>
-            <Card className="p-4 hover:bg-primary/10 cursor-pointer transition-colors text-center">
+            <Card 
+              className={`p-4 cursor-pointer transition-colors text-center ${
+                selectedTimeframe === "12h" ? "bg-primary text-primary-foreground" : "hover:bg-primary/10"
+              }`}
+              onClick={() => handleTimeframeClick("12h")}
+            >
               <span className="font-medium">Prediction 12 hours</span>
             </Card>
-            <Card className="p-4 hover:bg-primary/10 cursor-pointer transition-colors text-center">
+            <Card 
+              className={`p-4 cursor-pointer transition-colors text-center ${
+                selectedTimeframe === "1d" ? "bg-primary text-primary-foreground" : "hover:bg-primary/10"
+              }`}
+              onClick={() => handleTimeframeClick("1d")}
+            >
               <span className="font-medium">Prediction 1 day</span>
             </Card>
-            <Card className="p-4 hover:bg-primary/10 cursor-pointer transition-colors text-center">
+            <Card 
+              className={`p-4 cursor-pointer transition-colors text-center ${
+                selectedTimeframe === "3d" ? "bg-primary text-primary-foreground" : "hover:bg-primary/10"
+              }`}
+              onClick={() => handleTimeframeClick("3d")}
+            >
               <span className="font-medium">Prediction 3 days</span>
             </Card>
           </div>

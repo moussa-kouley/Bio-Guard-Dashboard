@@ -1,33 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useToast } from "./ui/use-toast";
 import type { GpsData } from "@/types/gps";
 import { MapPin } from "lucide-react";
 import { renderToString } from "react-dom/server";
-
-// Component to handle map bounds
-const MapBoundsComponent = ({ data, currentLocation }: { data: GpsData[], currentLocation: [number, number] | null }) => {
-  const map = useMap();
-
-  useEffect(() => {
-    if (data.length > 0) {
-      const bounds = L.latLngBounds(
-        data
-          .filter(item => item.latitude && item.longitude)
-          .map(item => [item.latitude, item.longitude])
-      );
-      if (bounds.isValid()) {
-        map.fitBounds(bounds);
-      }
-    } else if (currentLocation) {
-      map.setView(currentLocation, 13);
-    }
-  }, [data, currentLocation, map]);
-
-  return null;
-};
 
 interface GpsMapProps {
   data: GpsData[];
@@ -71,18 +49,18 @@ const GpsMap = ({ data }: GpsMapProps) => {
     <MapContainer
       center={initialCenter}
       zoom={13}
-      style={{ height: "400px", width: "100%" }}
+      style={{ height: "100%", width: "100%" }}
       scrollWheelZoom={false}
     >
       <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       {data.map((point, index) => (
         point.latitude && point.longitude ? (
           <Marker 
             key={index} 
-            position={[point.latitude, point.longitude]}
+            position={[point.latitude, point.longitude] as [number, number]}
             icon={customIcon}
           >
             <Popup>
@@ -103,7 +81,10 @@ const GpsMap = ({ data }: GpsMapProps) => {
         ) : null
       ))}
       {currentLocation && data.length === 0 && (
-        <Marker position={currentLocation} icon={customIcon}>
+        <Marker 
+          position={currentLocation}
+          icon={customIcon}
+        >
           <Popup>
             <div>
               <h3 className="font-semibold">Current Location</h3>
@@ -113,7 +94,6 @@ const GpsMap = ({ data }: GpsMapProps) => {
           </Popup>
         </Marker>
       )}
-      <MapBoundsComponent data={data} currentLocation={currentLocation} />
     </MapContainer>
   );
 };
