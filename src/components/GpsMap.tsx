@@ -60,8 +60,8 @@ const GpsMap = ({ data }: GpsMapProps) => {
   return (
     <MapContainer
       key={`${initialCenter[0]}-${initialCenter[1]}`}
-      center={initialCenter}
-      zoom={13}
+      defaultCenter={initialCenter}
+      defaultZoom={13}
       style={{ height: "400px", width: "100%" }}
       scrollWheelZoom={false}
     >
@@ -71,34 +71,29 @@ const GpsMap = ({ data }: GpsMapProps) => {
       />
       {data.map((point, index) => (
         point.latitude && point.longitude ? (
-          <Marker key={index} position={[point.latitude, point.longitude]}>
-            <Popup>
-              <div className="space-y-2">
-                <h3 className="font-semibold">GPS Data Point {index + 1}</h3>
-                <p><strong>Latitude:</strong> {point.latitude.toFixed(6)}</p>
-                <p><strong>Longitude:</strong> {point.longitude.toFixed(6)}</p>
-                <p><strong>Altitude:</strong> {point.altitude ? `${point.altitude}m` : 'N/A'}</p>
-                <p><strong>HDOP:</strong> {point.hdop || 'N/A'}</p>
-                <p><strong>Temperature:</strong> {point.temperature ? `${point.temperature}°C` : 'N/A'}</p>
-                <p><strong>pH:</strong> {point.ph || 'N/A'}</p>
-                <p><strong>Dissolved Solids:</strong> {point.dissolvedsolids || 'N/A'}</p>
-                <p><strong>Port:</strong> {point.f_port || 'N/A'}</p>
-                <p><strong>Timestamp:</strong> {new Date(point.timestamp).toLocaleString()}</p>
-              </div>
-            </Popup>
-          </Marker>
+          <div key={index} className="absolute bg-white p-2 rounded shadow-lg z-50" style={{
+            left: `${(point.longitude + 180) / 360 * 100}%`,
+            top: `${(90 - point.latitude) / 180 * 100}%`
+          }}>
+            <h3 className="font-semibold">GPS Data Point {index + 1}</h3>
+            <p><strong>Lat:</strong> {point.latitude.toFixed(4)}</p>
+            <p><strong>Long:</strong> {point.longitude.toFixed(4)}</p>
+            <p><strong>Alt:</strong> {point.altitude ? `${point.altitude}m` : 'N/A'}</p>
+            <p><strong>Temp:</strong> {point.temperature ? `${point.temperature}°C` : 'N/A'}</p>
+            <p><strong>pH:</strong> {point.ph || 'N/A'}</p>
+            <p><strong>TDS:</strong> {point.dissolvedsolids || 'N/A'}</p>
+          </div>
         ) : null
       ))}
       {currentLocation && data.length === 0 && (
-        <Marker position={currentLocation}>
-          <Popup>
-            <div>
-              <h3 className="font-semibold">Current Location</h3>
-              <p><strong>Latitude:</strong> {currentLocation[0].toFixed(6)}</p>
-              <p><strong>Longitude:</strong> {currentLocation[1].toFixed(6)}</p>
-            </div>
-          </Popup>
-        </Marker>
+        <div className="absolute bg-white p-2 rounded shadow-lg z-50" style={{
+          left: `${(currentLocation[1] + 180) / 360 * 100}%`,
+          top: `${(90 - currentLocation[0]) / 180 * 100}%`
+        }}>
+          <h3 className="font-semibold">Current Location</h3>
+          <p><strong>Lat:</strong> {currentLocation[0].toFixed(4)}</p>
+          <p><strong>Long:</strong> {currentLocation[1].toFixed(4)}</p>
+        </div>
       )}
       <MapBoundsComponent data={data} currentLocation={currentLocation} />
     </MapContainer>
