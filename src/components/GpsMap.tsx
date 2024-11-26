@@ -25,19 +25,19 @@ interface GpsMapProps {
 const GpsMap = ({ data }: GpsMapProps) => {
   const { toast } = useToast();
   // Hartbeespoort, South Africa coordinates
-  const defaultCenter: [number, number] = [-25.7487, 27.8739];
+  const center: [number, number] = [-25.7487, 27.8739];
 
   return (
     <div style={{ height: "100%", width: "100%" }}>
       <MapContainer
-        defaultCenter={defaultCenter}
+        center={center}
         zoom={13}
         scrollWheelZoom={false}
         style={{ height: "100%", width: "100%" }}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          attributionUrl='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         {data.map((point, index) => (
           point.latitude && point.longitude ? (
@@ -63,12 +63,12 @@ const GpsMap = ({ data }: GpsMapProps) => {
           ) : null
         ))}
         {!data.length && (
-          <Marker position={defaultCenter}>
+          <Marker position={center}>
             <Popup>
               <div>
                 <h3 className="font-semibold">Current Location</h3>
-                <p><strong>Latitude:</strong> {defaultCenter[0].toFixed(6)}</p>
-                <p><strong>Longitude:</strong> {defaultCenter[1].toFixed(6)}</p>
+                <p><strong>Latitude:</strong> {center[0].toFixed(6)}</p>
+                <p><strong>Longitude:</strong> {center[1].toFixed(6)}</p>
               </div>
             </Popup>
           </Marker>
