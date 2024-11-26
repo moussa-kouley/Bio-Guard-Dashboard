@@ -18,8 +18,19 @@ import { useQuery } from '@tanstack/react-query';
 import type { GpsData } from "@/types/gps";
 import * as React from 'react';
 
-// Sample data for local development
-const sampleGpsData: GpsData[] = [
+interface AnalysisData {
+  coverage: number;
+  growth_rate: number;
+  water_quality: number;
+  timestamp: string;
+}
+
+const Dashboard = () => {
+  const { toast } = useToast();
+  const [analysisHistory, setAnalysisHistory] = React.useState<AnalysisData[]>([]);
+
+  // Sample data for local development
+  const sampleGpsData: GpsData[] = [
   {
     latitude: -25.7487,
     longitude: 27.8739,
@@ -42,21 +53,43 @@ const sampleGpsData: GpsData[] = [
     timestamp: new Date(Date.now() - 3600000).toISOString(),
     f_port: 1
   }
-];
-
-const Dashboard = () => {
-  const { toast } = useToast();
+  ];
 
   // Simulated data fetching with React Query
   const { data: gpsData = sampleGpsData } = useQuery({
     queryKey: ['gpsData'],
     queryFn: async () => {
-      // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 500));
       return sampleGpsData;
     },
     refetchInterval: 5000,
   });
+
+  React.useEffect(() => {
+    const handleNewAnalysis = (event: CustomEvent<{ 
+      analysis: string, 
+      timestamp: string,
+      metrics: {
+        coverage: number,
+        growth_rate: number,
+        water_quality: number
+      }
+    }>) => {
+      const { coverage, growth_rate, water_quality } = event.detail.metrics;
+      
+      setAnalysisHistory(prev => [...prev, {
+        coverage,
+        growth_rate,
+        water_quality,
+        timestamp: event.detail.timestamp
+      }]);
+    };
+
+    window.addEventListener('newAnalysis', handleNewAnalysis as EventListener);
+    return () => {
+      window.removeEventListener('newAnalysis', handleNewAnalysis as EventListener);
+    };
+  }, []);
 
   return (
     <div className="p-6">
@@ -74,13 +107,30 @@ const Dashboard = () => {
         <Card className="p-4">
           <h2 className="text-lg font-semibold mb-4">Water Hyacinth Growth Analysis</h2>
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={gpsData}>
+            <AreaChart data={analysisHistory}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="timestamp" />
+              <XAxis 
+                dataKey="timestamp" 
+                tickFormatter={(value) => new Date(value).toLocaleTimeString()} 
+              />
               <YAxis />
-              <Tooltip />
-              <Area type="monotone" dataKey="coverage" stroke="#82ca9d" fill="#82ca9d" />
-              <Line type="monotone" dataKey="growthRate" stroke="#8884d8" />
+              <Tooltip 
+                labelFormatter={(value) => new Date(value).toLocaleString()}
+                formatter={(value: number) => [`${value.toFixed(1)}%`, 'Coverage']}
+              />
+              <Area 
+                type="monotone" 
+                dataKey="coverage" 
+                stroke="#82ca9d" 
+                fill="#82ca9d" 
+                name="Coverage"
+              />
+              <Line 
+                type="monotone" 
+                dataKey="growth_rate" 
+                stroke="#8884d8" 
+                name="Growth Rate"
+              />
             </AreaChart>
           </ResponsiveContainer>
         </Card>
@@ -88,14 +138,23 @@ const Dashboard = () => {
         <Card className="p-4">
           <h2 className="text-lg font-semibold mb-4">Water Quality Trends</h2>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={gpsData}>
+            <LineChart data={analysisHistory}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="timestamp" />
+              <XAxis 
+                dataKey="timestamp" 
+                tickFormatter={(value) => new Date(value).toLocaleTimeString()} 
+              />
               <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="ph" stroke="#8884d8" name="pH" />
-              <Line type="monotone" dataKey="dissolvedOxygen" stroke="#82ca9d" name="Dissolved Oxygen" />
-              <Line type="monotone" dataKey="turbidity" stroke="#ffc658" name="Turbidity" />
+              <Tooltip 
+                labelFormatter={(value) => new Date(value).toLocaleString()}
+                formatter={(value: number) => [`${value.toFixed(1)}%`, 'Quality Impact']}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="water_quality" 
+                stroke="#8884d8" 
+                name="Water Quality Impact" 
+              />
             </LineChart>
           </ResponsiveContainer>
         </Card>
