@@ -1,11 +1,22 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import React, { useEffect, useState } from "react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { useToast } from "./ui/use-toast";
 import type { GpsData } from "@/types/gps";
-import { MapPin } from "lucide-react";
-import { renderToString } from "react-dom/server";
 import L from "leaflet";
+
+// Fix Leaflet default icon issue
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+let DefaultIcon = L.icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41]
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
 
 interface GpsMapProps {
   data: GpsData[];
@@ -37,17 +48,6 @@ const sampleData: GpsData[] = [
   }
 ];
 
-// Component to update map view when center changes
-function MapUpdater({ center }: { center: [number, number] }) {
-  const map = useMap();
-  
-  useEffect(() => {
-    map.setView(center, map.getZoom());
-  }, [center, map]);
-
-  return null;
-}
-
 const GpsMap = ({ data }: GpsMapProps) => {
   const { toast } = useToast();
   const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
@@ -71,14 +71,10 @@ const GpsMap = ({ data }: GpsMapProps) => {
     }
   }, [displayData.length, toast]);
 
-  const initialCenter = displayData[0]?.latitude && displayData[0]?.longitude
-    ? [displayData[0].latitude, displayData[0].longitude] as [number, number]
-    : currentLocation || defaultPosition;
-
   return (
     <MapContainer
       style={{ height: "100%", width: "100%" }}
-      center={initialCenter}
+      center={defaultPosition}
       zoom={13}
       scrollWheelZoom={false}
     >
@@ -90,7 +86,7 @@ const GpsMap = ({ data }: GpsMapProps) => {
         point.latitude && point.longitude ? (
           <Marker 
             key={index} 
-            position={[point.latitude, point.longitude]}
+            position={[point.latitude, point.longitude] as [number, number]}
           >
             <Popup>
               <div className="space-y-2">
