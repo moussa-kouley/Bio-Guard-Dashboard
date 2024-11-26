@@ -11,17 +11,17 @@ interface MetricCardsProps {
 
 export const MetricCards = ({ latestData, data }: MetricCardsProps) => {
   const [findings, setFindings] = React.useState<Array<{ text: string, timestamp: string }>>([
-    { text: "15% increase in water hyacinth in the northern zone", timestamp: new Date().toISOString() },
-    { text: "Decrease in dissolved oxygen levels near dense hyacinth patches", timestamp: new Date().toISOString() },
-    { text: "Increased nutrient levels detected in southern zone", timestamp: new Date().toISOString() }
+    { text: "15% increase in water hyacinth detected", timestamp: new Date().toISOString() },
+    { text: "Low oxygen levels in dense patches", timestamp: new Date().toISOString() }
   ]);
 
   React.useEffect(() => {
     const handleNewAnalysis = (event: CustomEvent<{ analysis: string, timestamp: string }>) => {
+      const shortSummary = event.detail.analysis.split('.')[0]; // Take only the first sentence
       setFindings(prev => [{
-        text: event.detail.analysis,
+        text: shortSummary,
         timestamp: event.detail.timestamp
-      }, ...prev.slice(0, 2)]);
+      }, ...prev.slice(0, 1)]); // Keep only one previous finding
     };
 
     window.addEventListener('newAnalysis', handleNewAnalysis as EventListener);
@@ -53,21 +53,12 @@ export const MetricCards = ({ latestData, data }: MetricCardsProps) => {
     const avgTemp = last20MinData.reduce((sum, entry) => sum + (entry.temperature || 0), 0) / last20MinData.length;
     const avgPh = last20MinData.reduce((sum, entry) => sum + (entry.ph || 0), 0) / last20MinData.length;
 
-    // Calculate current coverage (using latitude as a proxy)
     const currentCoverage = (avgLatitude * 0.1).toFixed(1);
-    
-    // Calculate previous coverage (using longitude as a proxy)
     const previousCoverage = (avgLongitude * 0.1).toFixed(1);
-    
-    // Calculate growth rate based on hdop
     const growthRate = last20MinData.length > 0 
       ? ((last20MinData[0].hdop || 0) * 0.1).toFixed(1)
       : "0";
-
-    // Water quality based on pH
     const waterQuality = ((avgPh - 7) * 10).toFixed(1);
-
-    // Predicted coverage based on altitude
     const predictedCoverage = last20MinData.length > 0 
       ? ((last20MinData[0].altitude || 0) * 0.1).toFixed(1)
       : "0";
@@ -96,7 +87,7 @@ export const MetricCards = ({ latestData, data }: MetricCardsProps) => {
         <Card className="p-3 bg-blue-50">
           <h3 className="text-xs font-medium mb-1">Previous WH Coverage</h3>
           <p className="text-xl font-bold">{metrics.previousCoverage}</p>
-          <p className="text-xs text-gray-600">present coverage area</p>
+          <p className="text-xs text-gray-600">previous coverage area</p>
         </Card>
 
         <Card className="p-3 bg-green-50">
@@ -114,7 +105,7 @@ export const MetricCards = ({ latestData, data }: MetricCardsProps) => {
             <p className="text-xl font-bold">{metrics.waterQuality}</p>
             <ArrowDownRight className="w-4 h-4 text-red-500" />
           </div>
-          <p className="text-xs text-gray-600">Decrease in water quality</p>
+          <p className="text-xs text-gray-600">quality index</p>
         </Card>
 
         <Card className="p-3 bg-purple-50">
@@ -123,7 +114,7 @@ export const MetricCards = ({ latestData, data }: MetricCardsProps) => {
             <p className="text-xl font-bold">{metrics.predictedCoverage}</p>
             <ArrowUpRight className="w-4 h-4 text-purple-500" />
           </div>
-          <p className="text-xs text-gray-600">estimated next month</p>
+          <p className="text-xs text-gray-600">next month estimate</p>
         </Card>
 
         <Card className="p-3 bg-yellow-50">
@@ -132,9 +123,25 @@ export const MetricCards = ({ latestData, data }: MetricCardsProps) => {
             <p className="text-xl font-bold">{metrics.temperature}</p>
             <ThermometerSun className="w-4 h-4 text-yellow-500" />
           </div>
-          <p className="text-xs text-gray-600">Current water temperature</p>
+          <p className="text-xs text-gray-600">current reading</p>
         </Card>
       </div>
+
+      <Card className="col-span-1 p-4">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">Recent Findings</h2>
+        </div>
+        <div className="space-y-3">
+          {findings.map((finding, index) => (
+            <div key={index} className={`p-2 ${index === 0 ? 'bg-green-100' : 'bg-blue-100'} rounded`}>
+              <p className="text-sm font-medium">{finding.text}</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {new Date(finding.timestamp).toLocaleTimeString()}
+              </p>
+            </div>
+          ))}
+        </div>
+      </Card>
 
       <Card className="col-span-1 lg:col-span-3 p-3">
         <div className="flex justify-between items-center mb-2">
@@ -146,22 +153,6 @@ export const MetricCards = ({ latestData, data }: MetricCardsProps) => {
         </div>
         <div className="overflow-hidden max-h-[250px]">
           <GpsDataTable data={data} />
-        </div>
-      </Card>
-
-      <Card className="p-4 col-span-1">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Recent Findings</h2>
-        </div>
-        <div className="space-y-3">
-          {findings.map((finding, index) => (
-            <div key={index} className={`p-2 ${index === 0 ? 'bg-green-100' : index === 1 ? 'bg-blue-100' : 'bg-orange-100'} rounded`}>
-              <p className="text-sm">{finding.text}</p>
-              <p className="text-xs text-gray-500 mt-1">
-                {new Date(finding.timestamp).toLocaleString()}
-              </p>
-            </div>
-          ))}
         </div>
       </Card>
     </div>
