@@ -26,7 +26,7 @@ async function fileToGenerativePart(file: File) {
 
 export const analyzeImageWithGemini = async (file: File): Promise<AnalysisResult> => {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
     const prompt = "Analyze this image of water hyacinth. Provide detailed information about: 1) The approximate coverage percentage of water hyacinth in the image 2) Estimated growth rate based on density and plant health 3) Potential impact on water quality. Format your response as: Coverage: X%, Growth Rate: Y%, Water Quality Impact: Z%. Then provide a detailed analysis.";
     
