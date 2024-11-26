@@ -9,19 +9,46 @@ interface MetricCardsProps {
   data: GpsData[];
 }
 
+interface Finding {
+  text: string;
+  scientificData: string;
+  timestamp: string;
+}
+
 export const MetricCards = ({ latestData, data }: MetricCardsProps) => {
-  const [findings, setFindings] = React.useState<Array<{ text: string, timestamp: string }>>([
-    { text: "15% increase in water hyacinth detected", timestamp: new Date().toISOString() },
-    { text: "Low oxygen levels in dense patches", timestamp: new Date().toISOString() }
+  const [findings, setFindings] = React.useState<Finding[]>([
+    {
+      text: "Dense water hyacinth patch detected",
+      scientificData: "Biomass density: 45kg/m², Chlorophyll content: 35.2 mg/g",
+      timestamp: new Date().toISOString()
+    },
+    {
+      text: "Water quality impact assessment",
+      scientificData: "DO levels: 4.2mg/L, Turbidity: 28 NTU, Light penetration: 45cm",
+      timestamp: new Date().toISOString()
+    }
   ]);
 
   React.useEffect(() => {
-    const handleNewAnalysis = (event: CustomEvent<{ analysis: string, timestamp: string }>) => {
-      const shortSummary = event.detail.analysis.split('.')[0]; // Take only the first sentence
+    const handleNewAnalysis = (event: CustomEvent<{ 
+      analysis: string, 
+      timestamp: string,
+      metrics: {
+        coverage: number,
+        growth_rate: number,
+        water_quality: number
+      }
+    }>) => {
+      const { coverage, growth_rate, water_quality } = event.detail.metrics;
+      
+      // Generate scientific analysis based on metrics
+      const scientificData = `Coverage: ${coverage.toFixed(1)}%, Growth rate: ${growth_rate.toFixed(1)}%/week, DO impact: ${(water_quality * 0.1).toFixed(1)}mg/L`;
+      
       setFindings(prev => [{
-        text: shortSummary,
+        text: event.detail.analysis.split('.')[0],
+        scientificData,
         timestamp: event.detail.timestamp
-      }, ...prev.slice(0, 1)]); // Keep only one previous finding
+      }, prev[0]]);
     };
 
     window.addEventListener('newAnalysis', handleNewAnalysis as EventListener);
@@ -129,12 +156,13 @@ export const MetricCards = ({ latestData, data }: MetricCardsProps) => {
 
       <Card className="col-span-1 p-4">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Recent Findings</h2>
+          <h2 className="text-lg font-semibold">Scientific Analysis</h2>
         </div>
         <div className="space-y-3">
           {findings.map((finding, index) => (
-            <div key={index} className={`p-2 ${index === 0 ? 'bg-green-100' : 'bg-blue-100'} rounded`}>
+            <div key={index} className={`p-3 ${index === 0 ? 'bg-green-100' : 'bg-blue-100'} rounded`}>
               <p className="text-sm font-medium">{finding.text}</p>
+              <p className="text-xs text-gray-600 mt-1">{finding.scientificData}</p>
               <p className="text-xs text-gray-500 mt-1">
                 {new Date(finding.timestamp).toLocaleTimeString()}
               </p>
