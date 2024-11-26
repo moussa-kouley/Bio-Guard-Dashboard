@@ -24,15 +24,8 @@ interface GpsMapProps {
 
 const GpsMap = ({ data }: GpsMapProps) => {
   const { toast } = useToast();
-  const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
   // Hartbeespoort, South Africa coordinates
   const hartbeespoortPosition: [number, number] = [-25.7487, 27.8739];
-
-  useEffect(() => {
-    if (!data.length) {
-      setCurrentLocation(hartbeespoortPosition);
-    }
-  }, [data.length]);
 
   return (
     <div style={{ height: "100%", width: "100%" }}>
@@ -43,8 +36,8 @@ const GpsMap = ({ data }: GpsMapProps) => {
         scrollWheelZoom={false}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         {data.map((point, index) => (
           point.latitude && point.longitude ? (
@@ -69,13 +62,13 @@ const GpsMap = ({ data }: GpsMapProps) => {
             </Marker>
           ) : null
         ))}
-        {currentLocation && !data.length && (
-          <Marker position={currentLocation}>
+        {!data.length && (
+          <Marker position={hartbeespoortPosition}>
             <Popup>
               <div>
                 <h3 className="font-semibold">Current Location</h3>
-                <p><strong>Latitude:</strong> {currentLocation[0].toFixed(6)}</p>
-                <p><strong>Longitude:</strong> {currentLocation[1].toFixed(6)}</p>
+                <p><strong>Latitude:</strong> {hartbeespoortPosition[0].toFixed(6)}</p>
+                <p><strong>Longitude:</strong> {hartbeespoortPosition[1].toFixed(6)}</p>
               </div>
             </Popup>
           </Marker>
