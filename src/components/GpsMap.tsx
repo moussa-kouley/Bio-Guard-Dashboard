@@ -55,12 +55,13 @@ const GpsMap = ({ data }: GpsMapProps) => {
   const displayData = data.length > 0 ? data : sampleData;
 
   useEffect(() => {
+    // Only get current location if we don't have any data
     if (displayData.length === 0) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setCurrentLocation([position.coords.latitude, position.coords.longitude]);
         },
-        (error) => {
+        () => {
           toast({
             title: "Location Error",
             description: "Could not get current location. Using default position.",
@@ -69,54 +70,56 @@ const GpsMap = ({ data }: GpsMapProps) => {
         }
       );
     }
-  }, [displayData.length, toast]);
+  }, []); // Empty dependency array to run only once
 
   return (
-    <MapContainer
-      style={{ height: "100%", width: "100%" }}
-      center={defaultPosition}
-      zoom={13}
-      scrollWheelZoom={false}
-    >
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      />
-      {displayData.map((point, index) => (
-        point.latitude && point.longitude ? (
-          <Marker 
-            key={index} 
-            position={[point.latitude, point.longitude] as [number, number]}
-          >
+    <div style={{ height: "100%", width: "100%" }}>
+      <MapContainer
+        center={defaultPosition}
+        zoom={13}
+        scrollWheelZoom={false}
+        style={{ height: "100%", width: "100%" }}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
+        {displayData.map((point, index) => (
+          point.latitude && point.longitude ? (
+            <Marker 
+              key={index} 
+              position={[point.latitude, point.longitude]}
+            >
+              <Popup>
+                <div className="space-y-2">
+                  <h3 className="font-semibold">GPS Data Point {index + 1}</h3>
+                  <p><strong>Latitude:</strong> {point.latitude.toFixed(6)}</p>
+                  <p><strong>Longitude:</strong> {point.longitude.toFixed(6)}</p>
+                  <p><strong>Altitude:</strong> {point.altitude ? `${point.altitude}m` : 'N/A'}</p>
+                  <p><strong>HDOP:</strong> {point.hdop || 'N/A'}</p>
+                  <p><strong>Temperature:</strong> {point.temperature ? `${point.temperature}°C` : 'N/A'}</p>
+                  <p><strong>pH:</strong> {point.ph || 'N/A'}</p>
+                  <p><strong>Dissolved Solids:</strong> {point.dissolvedsolids || 'N/A'}</p>
+                  <p><strong>Port:</strong> {point.f_port || 'N/A'}</p>
+                  <p><strong>Timestamp:</strong> {new Date(point.timestamp).toLocaleString()}</p>
+                </div>
+              </Popup>
+            </Marker>
+          ) : null
+        ))}
+        {currentLocation && displayData.length === 0 && (
+          <Marker position={currentLocation}>
             <Popup>
-              <div className="space-y-2">
-                <h3 className="font-semibold">GPS Data Point {index + 1}</h3>
-                <p><strong>Latitude:</strong> {point.latitude.toFixed(6)}</p>
-                <p><strong>Longitude:</strong> {point.longitude.toFixed(6)}</p>
-                <p><strong>Altitude:</strong> {point.altitude ? `${point.altitude}m` : 'N/A'}</p>
-                <p><strong>HDOP:</strong> {point.hdop || 'N/A'}</p>
-                <p><strong>Temperature:</strong> {point.temperature ? `${point.temperature}°C` : 'N/A'}</p>
-                <p><strong>pH:</strong> {point.ph || 'N/A'}</p>
-                <p><strong>Dissolved Solids:</strong> {point.dissolvedsolids || 'N/A'}</p>
-                <p><strong>Port:</strong> {point.f_port || 'N/A'}</p>
-                <p><strong>Timestamp:</strong> {new Date(point.timestamp).toLocaleString()}</p>
+              <div>
+                <h3 className="font-semibold">Current Location</h3>
+                <p><strong>Latitude:</strong> {currentLocation[0].toFixed(6)}</p>
+                <p><strong>Longitude:</strong> {currentLocation[1].toFixed(6)}</p>
               </div>
             </Popup>
           </Marker>
-        ) : null
-      ))}
-      {currentLocation && displayData.length === 0 && (
-        <Marker position={currentLocation}>
-          <Popup>
-            <div>
-              <h3 className="font-semibold">Current Location</h3>
-              <p><strong>Latitude:</strong> {currentLocation[0].toFixed(6)}</p>
-              <p><strong>Longitude:</strong> {currentLocation[1].toFixed(6)}</p>
-            </div>
-          </Popup>
-        </Marker>
-      )}
-    </MapContainer>
+        )}
+      </MapContainer>
+    </div>
   );
 };
 
