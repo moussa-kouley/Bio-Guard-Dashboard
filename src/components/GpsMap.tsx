@@ -1,15 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { useToast } from "./ui/use-toast";
 import type { GpsData } from "@/types/gps";
 import L from "leaflet";
-
-// Fix Leaflet default icon issue
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
-let DefaultIcon = L.icon({
+const DefaultIcon = L.icon({
   iconUrl: icon,
   shadowUrl: iconShadow,
   iconSize: [25, 41],
@@ -22,7 +20,6 @@ interface GpsMapProps {
   data: GpsData[];
 }
 
-// Sample data to use when Supabase fails
 const sampleData: GpsData[] = [
   {
     latitude: 1.3521,
@@ -51,11 +48,10 @@ const sampleData: GpsData[] = [
 const GpsMap = ({ data }: GpsMapProps) => {
   const { toast } = useToast();
   const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
-  const defaultPosition: [number, number] = [1.3521, 103.8198]; // Singapore coordinates
+  const defaultPosition: [number, number] = [1.3521, 103.8198];
   const displayData = data.length > 0 ? data : sampleData;
 
-  useEffect(() => {
-    // Only get current location if we don't have any data
+  const getCurrentLocation = useCallback(() => {
     if (displayData.length === 0) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -70,15 +66,19 @@ const GpsMap = ({ data }: GpsMapProps) => {
         }
       );
     }
-  }, []); // Empty dependency array to run only once
+  }, [displayData.length, toast]);
+
+  useEffect(() => {
+    getCurrentLocation();
+  }, [getCurrentLocation]);
 
   return (
     <div style={{ height: "100%", width: "100%" }}>
       <MapContainer
-        center={defaultPosition}
+        style={{ height: "100%", width: "100%" }}
+        defaultCenter={defaultPosition}
         zoom={13}
         scrollWheelZoom={false}
-        style={{ height: "100%", width: "100%" }}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
