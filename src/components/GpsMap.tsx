@@ -25,30 +25,20 @@ interface GpsMapProps {
 const GpsMap = ({ data }: GpsMapProps) => {
   const { toast } = useToast();
   const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
-  const defaultPosition: [number, number] = [1.3521, 103.8198];
+  // Hasselt, Belgium coordinates
+  const hasseltPosition: [number, number] = [50.9307, 5.3378];
 
   useEffect(() => {
     if (!data.length) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setCurrentLocation([position.coords.latitude, position.coords.longitude]);
-        },
-        () => {
-          toast({
-            title: "Location Error",
-            description: "Could not get current location. Using default position.",
-            variant: "destructive",
-          });
-        }
-      );
+      setCurrentLocation(hasseltPosition);
     }
-  }, [data.length, toast]);
+  }, [data.length]);
 
   return (
     <div style={{ height: "100%", width: "100%" }}>
       <MapContainer
         style={{ height: "100%", width: "100%" }}
-        defaultCenter={defaultPosition}
+        center={hasseltPosition}
         zoom={13}
         scrollWheelZoom={false}
       >
