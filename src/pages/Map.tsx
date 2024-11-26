@@ -4,15 +4,10 @@ import { useToast } from "@/components/ui/use-toast";
 import { CalendarDays, Clock } from "lucide-react";
 import { format } from "date-fns";
 import GpsMap from "@/components/GpsMap";
-import { createClient } from '@supabase/supabase-js';
 import { useQuery } from '@tanstack/react-query';
 import { MapFilters } from "@/components/map/MapFilters";
 import { LatestMeasurements } from "@/components/map/LatestMeasurements";
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL || '',
-  import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-);
+import { supabase } from "@/lib/supabase";
 
 const Map = () => {
   const { toast } = useToast();
@@ -48,7 +43,16 @@ const Map = () => {
         }
 
         const { data, error } = await query;
-        if (error) throw error;
+        
+        if (error) {
+          toast({
+            title: "Error fetching data",
+            description: error.message,
+            variant: "destructive",
+          });
+          throw error;
+        }
+        
         return data || [];
       } catch (error) {
         console.error('Error fetching GPS data:', error);

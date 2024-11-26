@@ -5,11 +5,11 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.set('view engine', 'ejs');
-app.use(express.static('public'));
+app.use(express.static('dist'));
 
-app.get('/', (req, res) => {
-  res.render('index');
+// Handle all routes by serving the index.html
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 app.listen(PORT, () => {
