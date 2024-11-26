@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Download, ThermometerSun, TrendingUp, ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { GpsData } from "@/types/gps";
 import GpsDataTable from "@/components/GpsDataTable";
+import React from "react";
 
 interface MetricCardsProps {
   latestData?: GpsData;
@@ -9,6 +10,26 @@ interface MetricCardsProps {
 }
 
 export const MetricCards = ({ latestData, data }: MetricCardsProps) => {
+  const [findings, setFindings] = React.useState<Array<{ text: string, timestamp: string }>>([
+    { text: "15% increase in water hyacinth in the northern zone", timestamp: new Date().toISOString() },
+    { text: "Decrease in dissolved oxygen levels near dense hyacinth patches", timestamp: new Date().toISOString() },
+    { text: "Increased nutrient levels detected in southern zone", timestamp: new Date().toISOString() }
+  ]);
+
+  React.useEffect(() => {
+    const handleNewAnalysis = (event: CustomEvent<{ analysis: string, timestamp: string }>) => {
+      setFindings(prev => [{
+        text: event.detail.analysis,
+        timestamp: event.detail.timestamp
+      }, ...prev.slice(0, 2)]);
+    };
+
+    window.addEventListener('newAnalysis', handleNewAnalysis as EventListener);
+    return () => {
+      window.removeEventListener('newAnalysis', handleNewAnalysis as EventListener);
+    };
+  }, []);
+
   // Filter data from last 20 minutes
   const last20MinData = data.filter(entry => {
     const entryTime = new Date(entry.timestamp).getTime();
@@ -133,15 +154,14 @@ export const MetricCards = ({ latestData, data }: MetricCardsProps) => {
           <h2 className="text-lg font-semibold">Recent Findings</h2>
         </div>
         <div className="space-y-3">
-          <div className="p-2 bg-blue-100 rounded">
-            <p className="text-sm">15% increase in water hyacinth in the northern zone</p>
-          </div>
-          <div className="p-2 bg-cyan-100 rounded">
-            <p className="text-sm">Decrease in dissolved oxygen levels near dense hyacinth patches</p>
-          </div>
-          <div className="p-2 bg-orange-100 rounded">
-            <p className="text-sm">Increased nutrient levels detected in southern zone</p>
-          </div>
+          {findings.map((finding, index) => (
+            <div key={index} className={`p-2 ${index === 0 ? 'bg-green-100' : index === 1 ? 'bg-blue-100' : 'bg-orange-100'} rounded`}>
+              <p className="text-sm">{finding.text}</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {new Date(finding.timestamp).toLocaleString()}
+              </p>
+            </div>
+          ))}
         </div>
       </Card>
     </div>

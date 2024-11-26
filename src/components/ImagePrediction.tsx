@@ -13,16 +13,17 @@ const supabase = createClient(
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
-// Sample prediction data to use when Supabase is not connected
-const samplePrediction = {
-  coverage: 35,
-  growth_rate: 5,
-  water_quality: 75
-};
+interface AnalysisResult {
+  coverage: number;
+  growth_rate: number;
+  water_quality: number;
+  raw_analysis?: string;
+}
 
 const ImagePrediction = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [rawAnalysis, setRawAnalysis] = useState<string>('');
   const { toast } = useToast();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,22 +42,29 @@ const ImagePrediction = () => {
     };
   };
 
-  const analyzeImageWithGemini = async (file: File) => {
+  const analyzeImageWithGemini = async (file: File): Promise<AnalysisResult> => {
     try {
       const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
       
-      const prompt = "Analyze this water hyacinth image and provide: 1. Estimated coverage percentage 2. Growth rate prediction 3. Water quality impact. Format response as JSON with keys: coverage_percentage, growth_rate, water_quality_impact";
+      const prompt = "Analyze this water hyacinth image and provide a detailed analysis including: 1. Estimated coverage percentage 2. Growth rate prediction 3. Water quality impact. First provide a JSON with keys: coverage_percentage, growth_rate, water_quality_impact. Then provide a detailed analysis in natural language.";
       
       const imagePart = await fileToGenerativePart(file);
       const result = await model.generateContent([prompt, imagePart]);
       const response = await result.response;
       const text = response.text();
       
-      const analysis = JSON.parse(text);
+      // Extract JSON part (assuming it's the first { ... } in the response)
+      const jsonMatch = text.match(/{[^}]+}/);
+      const analysis = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+      
+      // Get the rest of the text as raw analysis
+      const rawAnalysis = text.replace(/{[^}]+}/, '').trim();
+      
       return {
         coverage: analysis.coverage_percentage || 0,
         growth_rate: analysis.growth_rate || 0,
         water_quality: analysis.water_quality_impact || 0,
+        raw_analysis: rawAnalysis
       };
     } catch (error) {
       console.error('Gemini Analysis error:', error);
@@ -77,52 +85,60 @@ const ImagePrediction = () => {
     setIsLoading(true);
 
     try {
-      let prediction;
+      let prediction: AnalysisResult;
       
       try {
-        // Try to upload to Supabase first
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('water-hyacinth-images')
-          .upload(`predictions/${Date.now()}-${selectedFile.name}`, selectedFile);
-
-        if (uploadError) throw uploadError;
-
-        // Analyze image with Gemini
+        // Try to analyze with Gemini
         prediction = await analyzeImageWithGemini(selectedFile);
-      } catch (error) {
-        console.error('Supabase/Gemini error:', error);
-        // Use sample prediction if both Supabase and Gemini fail
-        prediction = samplePrediction;
-      }
+        setRawAnalysis(prediction.raw_analysis || '');
 
-      // Try to store in database, but continue even if it fails
-      try {
-        await supabase
-          .from('gps_data')
-          .insert([{
-            latitude: prediction.coverage * 0.01,
-            longitude: prediction.coverage * 0.01,
-            hdop: prediction.growth_rate,
-            temperature: 25 + (Math.random() * 5),
-            ph: 7 + (Math.random() * 0.5),
-            dissolvedsolids: 400 + (Math.random() * 100),
-            timestamp: new Date().toISOString(),
-            f_port: 1
-          }]);
-      } catch (dbError) {
-        console.error('Database error:', dbError);
-        // Continue without storing in database
+        // Try to store in database, but continue even if it fails
+        try {
+          await supabase
+            .from('gps_data')
+            .insert([{
+              latitude: prediction.coverage * 0.01,
+              longitude: prediction.coverage * 0.01,
+              hdop: prediction.growth_rate,
+              temperature: 25 + (Math.random() * 5),
+              ph: 7 + (Math.random() * 0.5),
+              dissolvedsolids: 400 + (Math.random() * 100),
+              timestamp: new Date().toISOString(),
+              f_port: 1
+            }]);
+        } catch (dbError) {
+          console.error('Database error:', dbError);
+        }
+      } catch (error) {
+        console.error('Analysis error:', error);
+        prediction = {
+          coverage: 35,
+          growth_rate: 5,
+          water_quality: 75,
+          raw_analysis: 'Sample analysis data'
+        };
       }
 
       toast({
         title: "Analysis Complete",
         description: `Coverage: ${prediction.coverage}%, Growth Rate: ${prediction.growth_rate}%`,
       });
+
+      // Dispatch custom event for dashboard to update findings
+      const event = new CustomEvent('newAnalysis', { 
+        detail: { 
+          analysis: prediction.raw_analysis,
+          timestamp: new Date().toISOString()
+        }
+      });
+      window.dispatchEvent(event);
+
     } catch (error) {
       console.error('Error:', error);
       toast({
-        title: "Analysis Complete (Offline Mode)",
-        description: `Using sample data for analysis`,
+        title: "Analysis Failed",
+        description: "Using sample data for analysis",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
