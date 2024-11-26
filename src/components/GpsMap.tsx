@@ -25,12 +25,12 @@ interface GpsMapProps {
 const GpsMap = ({ data }: GpsMapProps) => {
   const { toast } = useToast();
   const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
-  // Hasselt, Belgium coordinates
-  const hasseltPosition: [number, number] = [50.9307, 5.3378];
+  // Hartbeespoort, South Africa coordinates
+  const hartbeespoortPosition: [number, number] = [-25.7487, 27.8739];
 
   useEffect(() => {
     if (!data.length) {
-      setCurrentLocation(hasseltPosition);
+      setCurrentLocation(hartbeespoortPosition);
     }
   }, [data.length]);
 
@@ -38,13 +38,13 @@ const GpsMap = ({ data }: GpsMapProps) => {
     <div style={{ height: "100%", width: "100%" }}>
       <MapContainer
         style={{ height: "100%", width: "100%" }}
-        center={hasseltPosition}
+        defaultCenter={hartbeespoortPosition}
         zoom={13}
         scrollWheelZoom={false}
       >
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {data.map((point, index) => (
           point.latitude && point.longitude ? (
