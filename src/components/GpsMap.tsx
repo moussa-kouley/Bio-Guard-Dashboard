@@ -22,39 +22,10 @@ interface GpsMapProps {
   data: GpsData[];
 }
 
-// Sample data to use when no data is available
-const sampleData: GpsData[] = [
-  {
-    latitude: 1.3521,
-    longitude: 103.8198,
-    altitude: 15,
-    hdop: 1.2,
-    temperature: 28.5,
-    ph: 7.2,
-    dissolvedsolids: 450,
-    timestamp: new Date().toISOString(),
-    f_port: 1
-  },
-  {
-    latitude: 1.3551,
-    longitude: 103.8228,
-    altitude: 12,
-    hdop: 1.1,
-    temperature: 29.0,
-    ph: 7.1,
-    dissolvedsolids: 460,
-    timestamp: new Date().toISOString(),
-    f_port: 1
-  }
-];
-
 const GpsMap = ({ data }: GpsMapProps) => {
   const { toast } = useToast();
   const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
-  const defaultPosition: [number, number] = [1.3521, 103.8198]; // Singapore coordinates
-
-  // Use sample data if no data is provided
-  const displayData = data.length > 0 ? data : sampleData;
+  const defaultPosition: [number, number] = [1.3521, 103.8198];
 
   useEffect(() => {
     if (!data.length) {
@@ -77,7 +48,7 @@ const GpsMap = ({ data }: GpsMapProps) => {
     <div style={{ height: "100%", width: "100%" }}>
       <MapContainer
         style={{ height: "100%", width: "100%" }}
-        center={defaultPosition}
+        defaultCenter={defaultPosition}
         zoom={13}
         scrollWheelZoom={false}
       >
@@ -85,7 +56,7 @@ const GpsMap = ({ data }: GpsMapProps) => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
-        {displayData.map((point, index) => (
+        {data.map((point, index) => (
           point.latitude && point.longitude ? (
             <Marker 
               key={index} 

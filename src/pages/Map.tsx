@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { CalendarDays, Clock } from "lucide-react";
@@ -10,15 +10,15 @@ import { MapFilters } from "@/components/map/MapFilters";
 import { LatestMeasurements } from "@/components/map/LatestMeasurements";
 
 const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
+  import.meta.env.VITE_SUPABASE_URL || '',
+  import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 );
 
 const Map = () => {
   const { toast } = useToast();
   const [selectedRegion, setSelectedRegion] = useState("");
   const [selectedSeverity, setSelectedSeverity] = useState("");
-  const [selectedTimeframe, setSelectedTimeframe] = useState("current"); // "current", "12h", "1d", "3d"
+  const [selectedTimeframe, setSelectedTimeframe] = useState("current");
   const lastValidMeasurements = React.useRef({
     temperature: null as number | null,
     ph: null as number | null,
@@ -29,51 +29,50 @@ const Map = () => {
   const { data: gpsData = [], isError } = useQuery({
     queryKey: ['gpsData', selectedTimeframe],
     queryFn: async () => {
-      let query = supabase
-        .from('gps_data')
-        .select('*')
-        .order('timestamp', { ascending: false });
+      try {
+        let query = supabase
+          .from('gps_data')
+          .select('*')
+          .order('timestamp', { ascending: false });
 
-      // Apply timeframe filter
-      const now = new Date();
-      if (selectedTimeframe === "12h") {
-        const twelveHoursAgo = new Date(now.getTime() - (12 * 60 * 60 * 1000));
-        query = query.gte('timestamp', twelveHoursAgo.toISOString());
-      } else if (selectedTimeframe === "1d") {
-        const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
-        query = query.gte('timestamp', oneDayAgo.toISOString());
-      } else if (selectedTimeframe === "3d") {
-        const threeDaysAgo = new Date(now.getTime() - (3 * 24 * 60 * 60 * 1000));
-        query = query.gte('timestamp', threeDaysAgo.toISOString());
+        const now = new Date();
+        if (selectedTimeframe === "12h") {
+          const twelveHoursAgo = new Date(now.getTime() - (12 * 60 * 60 * 1000));
+          query = query.gte('timestamp', twelveHoursAgo.toISOString());
+        } else if (selectedTimeframe === "1d") {
+          const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+          query = query.gte('timestamp', oneDayAgo.toISOString());
+        } else if (selectedTimeframe === "3d") {
+          const threeDaysAgo = new Date(now.getTime() - (3 * 24 * 60 * 60 * 1000));
+          query = query.gte('timestamp', threeDaysAgo.toISOString());
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error('Error fetching GPS data:', error);
+        return [];
       }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data;
     },
     refetchInterval: 5000,
   });
 
-  // Update last valid measurements when new data arrives
   React.useEffect(() => {
     if (gpsData && gpsData[0]) {
       const latestData = gpsData[0];
-      if (typeof latestData.temperature === 'number' && !isNaN(latestData.temperature)) {
-        lastValidMeasurements.current.temperature = latestData.temperature;
-      }
-      if (typeof latestData.ph === 'number' && !isNaN(latestData.ph)) {
-        lastValidMeasurements.current.ph = latestData.ph;
-      }
-      if (typeof latestData.dissolvedsolids === 'number' && !isNaN(latestData.dissolvedsolids)) {
-        lastValidMeasurements.current.dissolvedsolids = latestData.dissolvedsolids;
-      }
-      lastValidMeasurements.current.timestamp = latestData.timestamp;
+      lastValidMeasurements.current = {
+        temperature: typeof latestData.temperature === 'number' ? latestData.temperature : null,
+        ph: typeof latestData.ph === 'number' ? latestData.ph : null,
+        dissolvedsolids: typeof latestData.dissolvedsolids === 'number' ? latestData.dissolvedsolids : null,
+        timestamp: latestData.timestamp,
+      };
     }
   }, [gpsData]);
 
-  const handleTimeframeClick = (timeframe: string) => {
+  const handleTimeframeClick = useCallback((timeframe: string) => {
     setSelectedTimeframe(timeframe);
-  };
+  }, []);
 
   if (isError) {
     toast({
