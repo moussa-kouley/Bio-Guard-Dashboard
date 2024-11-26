@@ -63,9 +63,9 @@ const GpsMap = ({ data }: GpsMapProps) => {
   return (
     <MapContainer
       style={{ height: "100%", width: "100%" }}
-      center={defaultPosition}
+      center={initialCenter}
       zoom={13}
-      scrollWheelZoom={false}
+      scrollWheelZoom={true}
     >
       <MapUpdater center={initialCenter} />
       <TileLayer
@@ -76,7 +76,8 @@ const GpsMap = ({ data }: GpsMapProps) => {
         point.latitude && point.longitude ? (
           <Marker 
             key={index} 
-            position={[point.latitude, point.longitude]}
+            position={[point.latitude, point.longitude] as L.LatLngExpression}
+            icon={customIcon}
           >
             <Popup>
               <div className="space-y-2">
@@ -96,7 +97,10 @@ const GpsMap = ({ data }: GpsMapProps) => {
         ) : null
       ))}
       {currentLocation && data.length === 0 && (
-        <Marker position={currentLocation}>
+        <Marker 
+          position={currentLocation as L.LatLngExpression}
+          icon={customIcon}
+        >
           <Popup>
             <div>
               <h3 className="font-semibold">Current Location</h3>
