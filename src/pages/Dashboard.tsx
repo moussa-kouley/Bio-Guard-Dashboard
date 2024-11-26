@@ -14,12 +14,11 @@ import { Card } from "@/components/ui/card";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { MetricCards } from "@/components/dashboard/MetricCards";
 import ImagePrediction from "@/components/ImagePrediction";
-import { createClient } from '@supabase/supabase-js';
 import { useQuery } from '@tanstack/react-query';
 import type { GpsData } from "@/types/gps";
 import * as React from 'react';
 
-// Sample data to use when Supabase is not connected
+// Sample data for local development
 const sampleGpsData: GpsData[] = [
   {
     latitude: -25.7487,
@@ -45,76 +44,19 @@ const sampleGpsData: GpsData[] = [
   }
 ];
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error('Supabase credentials are missing');
-}
-
-const supabase = createClient(
-  supabaseUrl || '',
-  supabaseKey || ''
-);
-
 const Dashboard = () => {
   const { toast } = useToast();
 
-  const { data: gpsData = sampleGpsData, isError } = useQuery({
+  // Simulated data fetching with React Query
+  const { data: gpsData = sampleGpsData } = useQuery({
     queryKey: ['gpsData'],
     queryFn: async () => {
-      try {
-        if (!supabaseUrl || !supabaseKey) {
-          throw new Error('Supabase credentials are missing');
-        }
-
-        const { data, error } = await supabase
-          .from('gps_data')
-          .select('*')
-          .order('timestamp', { ascending: false });
-
-        if (error) {
-          console.error('Supabase error:', error);
-          throw error;
-        }
-
-        if (!data || data.length === 0) {
-          console.log('No data found, using sample data');
-          return sampleGpsData;
-        }
-
-        return data as GpsData[];
-      } catch (error) {
-        console.error('Error fetching GPS data:', error);
-        toast({
-          title: "Connection Error",
-          description: "Using sample data due to connection issues",
-          variant: "destructive",
-        });
-        return sampleGpsData;
-      }
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return sampleGpsData;
     },
     refetchInterval: 5000,
-    retry: 1, // Only retry once to avoid too many failed attempts
   });
-
-  React.useEffect(() => {
-    if (!supabaseUrl || !supabaseKey) return;
-
-    const subscription = supabase
-      .channel('gps_data_changes')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'gps_data' },
-        (payload) => {
-          console.log('Real-time update received:', payload);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
 
   return (
     <div className="p-6">
