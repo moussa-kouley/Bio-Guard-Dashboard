@@ -1,53 +1,71 @@
-BioGuard: Water Hyacinth Monitoring and Prevention Dashboard
+# Welcome to your GPT Engineer project
 
-Welcome to the BioGuard Dashboard repository! This project is part of our mission to monitor and control the growth of invasive water hyacinth, which poses serious environmental challenges. Our team is using technology to offer sustainable solutions to mitigate the spread of this plant, focusing on real-time data collection and visualization.
+## Project info
 
-Project Overview
+**URL**: https://run.gptengineer.app/projects/a6061fee-1234-4e21-a440-48dbf2ac4c4b/improve
 
-BioGuard is a data-driven platform designed to monitor and prevent the spread of water hyacinth by providing insights on growth patterns and environmental impacts. We developed this dashboard to support environmental scientists and communities in decision-making by delivering actionable insights into the water hyacinth growth data. This repository contains all code and configuration needed to run the dashboard.
+## How can I edit this code?
 
-Key Features
+There are several ways of editing your application.
 
-	•	Real-Time Monitoring: Displays live updates on water hyacinth growth metrics using data from IoT sensors connected via The Things Network (TTN).
-	•	Data Management: Powered by a Supabase backend, ensuring secure and scalable data storage.
-	•	LoRaWAN Integration: Leverages LoRaWAN for long-range, low-power data transmission from remote water hyacinth monitoring locations.
-	•	Interactive Dashboard: User-friendly interface to view, analyze, and export data in various formats for comprehensive analysis.
+**Use GPT Engineer**
 
-Tech Stack
+Simply visit the GPT Engineer project at [GPT Engineer](https://gptengineer.app/projects/a6061fee-1234-4e21-a440-48dbf2ac4c4b/improve) and start prompting.
 
-	•	Frontend: React.js
-	•	Backend: Supabase
-	•	IoT Network: LoRaWAN, The Things Network
-	•	Data Source: IoT sensors tracking environmental factors related to water hyacinth growth
+Changes made via gptengineer.app will be committed automatically to this repo.
 
-How It Works
+**Use your preferred IDE**
 
-	1.	Data Collection: IoT sensors installed in affected areas monitor environmental parameters.
-	2.	Data Transmission: Collected data is sent through LoRaWAN to The Things Network, where it is received and processed.
-	3.	Data Storage: The data is stored in a Supabase database for easy access and management.
-	4.	Dashboard Visualization: Our dashboard fetches and visualizes data, providing insights to help control water hyacinth growth.
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in the GPT Engineer UI.
 
-Getting Started
+The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-To run the dashboard locally, clone this repository and follow these steps:
-	1.	Install Dependencies:
+Follow these steps:
 
-npm install
+```sh
+# Step 1: Clone the repository using the project's Git URL.
+git clone <YOUR_GIT_URL>
 
+# Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
 
-	2.	Environment Setup: Configure environment variables for Supabase and The Things Network.
-	3.	Run Application:
+# Step 3: Install the necessary dependencies.
+npm i
 
+# Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
+```
 
+**Edit a file directly in GitHub**
 
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
 
-Contributions
+**Use GitHub Codespaces**
 
-We welcome contributions to improve the BioGuard dashboard! Please feel free to fork this repository, create a branch, and submit a pull request.
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
+- Edit files directly within the Codespace and commit and push your changes once you're done.
 
-License
+## What technologies are used for this project?
 
-This project is licensed under the MIT License.
+This project is built with .
 
-The BioGuard team is committed to advancing the sustainable management of invasive species. Let’s work together to create impactful environmental solutions!
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
+
+## How can I deploy this project?
+
+All GPT Engineer projects can be deployed directly via the GPT Engineer app.
+
+Simply visit your project at [GPT Engineer](https://gptengineer.app/projects/a6061fee-1234-4e21-a440-48dbf2ac4c4b/improve) and click on Share -> Publish.
+
+## I want to use a custom domain - is that possible?
+
+We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.gptengineer.app/tips-tricks/custom-domain/)
