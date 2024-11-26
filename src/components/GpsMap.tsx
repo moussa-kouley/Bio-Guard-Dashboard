@@ -25,13 +25,13 @@ interface GpsMapProps {
 const GpsMap = ({ data }: GpsMapProps) => {
   const { toast } = useToast();
   // Hartbeespoort, South Africa coordinates
-  const defaultPosition: L.LatLngExpression = [-25.7487, 27.8739];
+  const defaultPosition: [number, number] = [-25.7487, 27.8739];
 
   return (
     <div style={{ height: "100%", width: "100%" }}>
       <MapContainer
-        center={defaultPosition}
-        zoom={13}
+        defaultCenter={defaultPosition}
+        defaultZoom={13}
         scrollWheelZoom={false}
         style={{ height: "100%", width: "100%" }}
       >

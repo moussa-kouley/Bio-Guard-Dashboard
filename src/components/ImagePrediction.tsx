@@ -48,13 +48,7 @@ const ImagePrediction = () => {
     try {
       const currentFile = selectedFiles[currentFileIndex];
       const prediction = await analyzeImageWithGemini(currentFile);
-
-      try {
-        await saveAnalysisToDatabase(prediction);
-      } catch (dbError) {
-        console.error('Database error:', dbError);
-      }
-
+      await saveAnalysisToDatabase(prediction);
       dispatchAnalysisEvent(prediction);
 
       toast({
@@ -68,7 +62,6 @@ const ImagePrediction = () => {
         setSelectedFiles([]);
         setCurrentFileIndex(0);
       }
-
     } catch (error) {
       console.error('Error:', error);
       toast({
