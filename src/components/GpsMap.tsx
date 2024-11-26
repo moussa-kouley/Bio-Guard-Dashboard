@@ -16,7 +16,7 @@ const GpsMap = ({ data }: GpsMapProps) => {
   return (
     <div style={{ height: "100%", width: "100%" }}>
       <MapContainer
-        center={defaultPosition}
+        center={defaultPosition as [number, number]}
         zoom={13}
         scrollWheelZoom={false}
         style={{ height: "100%", width: "100%" }}
@@ -26,7 +26,10 @@ const GpsMap = ({ data }: GpsMapProps) => {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         {data.map((entry, index) => (
-          <Marker key={index} position={[entry.latitude, entry.longitude]}>
+          <Marker 
+            key={index} 
+            position={[entry.latitude, entry.longitude] as [number, number]}
+          >
             <Popup>
               <div>
                 <h2>Data Point</h2>
