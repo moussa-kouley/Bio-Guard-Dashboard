@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -22,9 +22,15 @@ const customIcon = new L.DivIcon({
 // Component to update map view when center changes
 function MapUpdater({ center }: { center: L.LatLngExpression }) {
   const map = useMap();
-  useEffect(() => {
-    map.setView(center);
+  
+  const updateView = useCallback(() => {
+    map.setView(center, map.getZoom());
   }, [center, map]);
+
+  useEffect(() => {
+    updateView();
+  }, [updateView]);
+
   return null;
 }
 
@@ -57,9 +63,9 @@ const GpsMap = ({ data }: GpsMapProps) => {
   return (
     <MapContainer
       style={{ height: "100%", width: "100%" }}
+      center={defaultPosition}
       zoom={13}
       scrollWheelZoom={false}
-      center={defaultPosition}
     >
       <MapUpdater center={initialCenter} />
       <TileLayer
@@ -70,8 +76,7 @@ const GpsMap = ({ data }: GpsMapProps) => {
         point.latitude && point.longitude ? (
           <Marker 
             key={index} 
-            position={[point.latitude, point.longitude] as L.LatLngExpression}
-            icon={customIcon}
+            position={[point.latitude, point.longitude]}
           >
             <Popup>
               <div className="space-y-2">
@@ -91,10 +96,7 @@ const GpsMap = ({ data }: GpsMapProps) => {
         ) : null
       ))}
       {currentLocation && data.length === 0 && (
-        <Marker 
-          position={currentLocation as L.LatLngExpression}
-          icon={customIcon}
-        >
+        <Marker position={currentLocation}>
           <Popup>
             <div>
               <h3 className="font-semibold">Current Location</h3>
