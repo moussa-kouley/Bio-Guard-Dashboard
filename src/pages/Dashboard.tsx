@@ -1,5 +1,4 @@
 import { useToast } from "@/components/ui/use-toast";
-import { format } from "date-fns";
 import {
   LineChart,
   Line,
@@ -25,58 +24,30 @@ const supabase = createClient(
   import.meta.env.VITE_SUPABASE_ANON_KEY
 );
 
-// Sample data to insert if table doesn't exist
-const sampleData = [
-  {
-    latitude: 1.3521,
-    longitude: 103.8198,
-    altitude: 14,
-    hdop: 1.2,
-    temperature: 28,
-    ph: 7.2,
-    dissolvedsolids: 450,
-    timestamp: new Date().toISOString(),
-    f_port: 1
-  },
-  // Add more sample entries as needed
-];
-
 const Dashboard = () => {
   const { toast } = useToast();
 
   const { data: gpsData = [], isError } = useQuery({
     queryKey: ['gpsData'],
     queryFn: async () => {
-      // Check if table exists
-      const { data: tableExists } = await supabase
-        .from('gps_data')
-        .select('count')
-        .limit(1);
-
-      // If table doesn't exist or is empty, insert sample data
-      if (!tableExists || tableExists.length === 0) {
-        const { error: createError } = await supabase
+      try {
+        const { data, error } = await supabase
           .from('gps_data')
-          .insert(sampleData);
+          .select('*')
+          .order('timestamp', { ascending: false });
 
-        if (createError) {
-          console.error('Error inserting sample data:', createError);
-        }
+        if (error) throw error;
+        return data as GpsData[];
+      } catch (error) {
+        console.error('Error fetching GPS data:', error);
+        return [];
       }
-
-      // Fetch data
-      const { data, error } = await supabase
-        .from('gps_data')
-        .select('*')
-        .order('timestamp', { ascending: false });
-
-      if (error) throw error;
-      return data as GpsData[];
     },
-    refetchInterval: 5000 // Refetch every 5 seconds
+    refetchInterval: 5000,
+    retry: 3,
+    retryDelay: 1000,
   });
 
-  // Subscribe to real-time changes
   React.useEffect(() => {
     const subscription = supabase
       .channel('gps_data_changes')
