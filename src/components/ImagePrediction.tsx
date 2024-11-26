@@ -4,11 +4,17 @@ import { useToast } from "@/components/ui/use-toast";
 import { Card } from "@/components/ui/card";
 import { Upload, FileType, AlertCircle } from "lucide-react";
 import { createClient } from '@supabase/supabase-js';
+import OpenAI from 'openai';
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_ANON_KEY
 );
+
+const openai = new OpenAI({
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true
+});
 
 const ImagePrediction = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -18,6 +24,40 @@ const ImagePrediction = () => {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       setSelectedFile(event.target.files[0]);
+    }
+  };
+
+  const analyzeImageWithGPT = async (imageUrl: string) => {
+    try {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4-vision-preview",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { 
+                type: "text", 
+                text: "Analyze this water hyacinth image and provide: 1. Estimated coverage percentage 2. Growth rate prediction 3. Water quality impact. Format as JSON." 
+              },
+              {
+                type: "image_url",
+                image_url: imageUrl,
+              },
+            ],
+          },
+        ],
+        max_tokens: 500,
+      });
+
+      const analysis = JSON.parse(response.choices[0].message.content || '{}');
+      return {
+        coverage: analysis.coverage_percentage || 0,
+        growth_rate: analysis.growth_rate || 0,
+        water_quality: analysis.water_quality_impact || 0,
+      };
+    } catch (error) {
+      console.error('GPT Analysis error:', error);
+      throw error;
     }
   };
 
@@ -41,26 +81,25 @@ const ImagePrediction = () => {
 
       if (uploadError) throw uploadError;
 
-      // Here you would call your AI model API endpoint
-      // For now, we'll simulate a prediction
-      const simulatedPrediction = {
-        coverage: Math.random() * 100,
-        growth_rate: Math.random() * 10,
-        water_quality: Math.random() * 100,
-        timestamp: new Date().toISOString(),
-      };
+      // Get public URL for the uploaded image
+      const { data: { publicUrl } } = supabase.storage
+        .from('water-hyacinth-images')
+        .getPublicUrl(uploadData.path);
+
+      // Analyze image with GPT
+      const prediction = await analyzeImageWithGPT(publicUrl);
 
       // Store prediction in database
       const { error: dbError } = await supabase
         .from('gps_data')
         .insert([{
-          latitude: simulatedPrediction.coverage * 0.01,
-          longitude: simulatedPrediction.coverage * 0.01,
-          hdop: simulatedPrediction.growth_rate,
+          latitude: prediction.coverage * 0.01,
+          longitude: prediction.coverage * 0.01,
+          hdop: prediction.growth_rate,
           temperature: 25 + (Math.random() * 5),
           ph: 7 + (Math.random() * 0.5),
           dissolvedsolids: 400 + (Math.random() * 100),
-          timestamp: simulatedPrediction.timestamp,
+          timestamp: new Date().toISOString(),
           f_port: 1
         }]);
 
@@ -68,7 +107,7 @@ const ImagePrediction = () => {
 
       toast({
         title: "Analysis Complete",
-        description: "Image analyzed and data updated successfully",
+        description: `Coverage: ${prediction.coverage}%, Growth Rate: ${prediction.growth_rate}%`,
       });
     } catch (error) {
       console.error('Error:', error);

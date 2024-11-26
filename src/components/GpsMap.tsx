@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { useToast } from "./ui/use-toast";
@@ -25,19 +25,19 @@ interface GpsMapProps {
 const GpsMap = ({ data }: GpsMapProps) => {
   const { toast } = useToast();
   // Hartbeespoort, South Africa coordinates
-  const hartbeespoortPosition: [number, number] = [-25.7487, 27.8739];
+  const defaultPosition: [number, number] = [-25.7487, 27.8739];
 
   return (
     <div style={{ height: "100%", width: "100%" }}>
       <MapContainer
         style={{ height: "100%", width: "100%" }}
-        center={hartbeespoortPosition}
+        defaultCenter={defaultPosition}
         zoom={13}
         scrollWheelZoom={false}
       >
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {data.map((point, index) => (
           point.latitude && point.longitude ? (
@@ -63,12 +63,12 @@ const GpsMap = ({ data }: GpsMapProps) => {
           ) : null
         ))}
         {!data.length && (
-          <Marker position={hartbeespoortPosition}>
+          <Marker position={defaultPosition}>
             <Popup>
               <div>
                 <h3 className="font-semibold">Current Location</h3>
-                <p><strong>Latitude:</strong> {hartbeespoortPosition[0].toFixed(6)}</p>
-                <p><strong>Longitude:</strong> {hartbeespoortPosition[1].toFixed(6)}</p>
+                <p><strong>Latitude:</strong> {defaultPosition[0].toFixed(6)}</p>
+                <p><strong>Longitude:</strong> {defaultPosition[1].toFixed(6)}</p>
               </div>
             </Popup>
           </Marker>
