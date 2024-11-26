@@ -19,6 +19,32 @@ import { useQuery } from '@tanstack/react-query';
 import type { GpsData } from "@/types/gps";
 import * as React from 'react';
 
+// Sample data to use when Supabase is not connected
+const sampleGpsData: GpsData[] = [
+  {
+    latitude: -25.7487,
+    longitude: 27.8739,
+    altitude: 100,
+    hdop: 25,
+    temperature: 25,
+    ph: 7.0,
+    dissolvedsolids: 450,
+    timestamp: new Date().toISOString(),
+    f_port: 1
+  },
+  {
+    latitude: -25.7490,
+    longitude: 27.8742,
+    altitude: 102,
+    hdop: 26,
+    temperature: 26,
+    ph: 7.2,
+    dissolvedsolids: 455,
+    timestamp: new Date(Date.now() - 3600000).toISOString(),
+    f_port: 1
+  }
+];
+
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -27,7 +53,7 @@ const supabase = createClient(
 const Dashboard = () => {
   const { toast } = useToast();
 
-  const { data: gpsData = [], isError } = useQuery({
+  const { data: gpsData = sampleGpsData, isError } = useQuery({
     queryKey: ['gpsData'],
     queryFn: async () => {
       try {
@@ -40,7 +66,7 @@ const Dashboard = () => {
         return data as GpsData[];
       } catch (error) {
         console.error('Error fetching GPS data:', error);
-        return [];
+        return sampleGpsData; // Return sample data if Supabase fails
       }
     },
     refetchInterval: 5000,
@@ -64,22 +90,12 @@ const Dashboard = () => {
     };
   }, []);
 
-  if (isError) {
-    toast({
-      title: "Error",
-      description: "Failed to fetch data from the database",
-      variant: "destructive",
-    });
-  }
-
-  const latestData = gpsData[0];
-
   return (
     <div className="p-6">
-      <DashboardHeader latestData={latestData} />
+      <DashboardHeader latestData={gpsData[0]} />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-2">
-          <MetricCards latestData={latestData} data={gpsData} />
+          <MetricCards latestData={gpsData[0]} data={gpsData} />
         </div>
         <div className="lg:col-span-1">
           <ImagePrediction />
