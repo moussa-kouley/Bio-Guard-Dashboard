@@ -28,7 +28,8 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const analyzeImageWithGemini = async (file: File): Promise<AnalysisResult> => {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // Use gemini-pro-vision instead of gemini-1.5-flash for better stability
+    const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
     
     const prompt = "Analyze this image of water hyacinth. Provide detailed information about: 1) The approximate coverage percentage of water hyacinth in the image 2) Estimated growth rate based on density and plant health 3) Potential impact on water quality. Format your response as: Coverage: X%, Growth Rate: Y%, Water Quality Impact: Z%. Then provide a detailed analysis.";
     
@@ -36,7 +37,8 @@ export const analyzeImageWithGemini = async (file: File): Promise<AnalysisResult
     
     // Add retry logic with exponential backoff
     let attempts = 0;
-    const maxAttempts = 3;
+    const maxAttempts = 5; // Increased max attempts
+    const initialDelay = 1000; // 1 second initial delay
     
     while (attempts < maxAttempts) {
       try {
@@ -55,13 +57,19 @@ export const analyzeImageWithGemini = async (file: File): Promise<AnalysisResult
           raw_analysis: text
         };
       } catch (error: any) {
-        if (error?.status === 429) {
-          attempts++;
-          if (attempts === maxAttempts) throw error;
-          await delay(Math.pow(2, attempts) * 1000); // Exponential backoff
-          continue;
+        attempts++;
+        
+        // If we've reached max attempts, throw the error
+        if (attempts === maxAttempts) {
+          throw error;
         }
-        throw error;
+        
+        // Calculate delay with exponential backoff and jitter
+        const backoffDelay = Math.min(initialDelay * Math.pow(2, attempts), 10000);
+        const jitter = Math.random() * 1000;
+        await delay(backoffDelay + jitter);
+        
+        continue;
       }
     }
     
