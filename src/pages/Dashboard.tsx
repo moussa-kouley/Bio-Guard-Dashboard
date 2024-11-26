@@ -45,9 +45,16 @@ const sampleGpsData: GpsData[] = [
   }
 ];
 
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Supabase credentials are missing');
+}
+
 const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
+  supabaseUrl || '',
+  supabaseKey || ''
 );
 
 const Dashboard = () => {
@@ -57,24 +64,43 @@ const Dashboard = () => {
     queryKey: ['gpsData'],
     queryFn: async () => {
       try {
+        if (!supabaseUrl || !supabaseKey) {
+          throw new Error('Supabase credentials are missing');
+        }
+
         const { data, error } = await supabase
           .from('gps_data')
           .select('*')
           .order('timestamp', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Supabase error:', error);
+          throw error;
+        }
+
+        if (!data || data.length === 0) {
+          console.log('No data found, using sample data');
+          return sampleGpsData;
+        }
+
         return data as GpsData[];
       } catch (error) {
         console.error('Error fetching GPS data:', error);
-        return sampleGpsData; // Return sample data if Supabase fails
+        toast({
+          title: "Connection Error",
+          description: "Using sample data due to connection issues",
+          variant: "destructive",
+        });
+        return sampleGpsData;
       }
     },
     refetchInterval: 5000,
-    retry: 3,
-    retryDelay: 1000,
+    retry: 1, // Only retry once to avoid too many failed attempts
   });
 
   React.useEffect(() => {
+    if (!supabaseUrl || !supabaseKey) return;
+
     const subscription = supabase
       .channel('gps_data_changes')
       .on('postgres_changes', 
