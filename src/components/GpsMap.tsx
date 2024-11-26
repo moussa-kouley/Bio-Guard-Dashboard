@@ -22,7 +22,7 @@ interface GpsMapProps {
   data: GpsData[];
 }
 
-// Sample data to use when Supabase fails
+// Sample data to use when no data is available
 const sampleData: GpsData[] = [
   {
     latitude: 1.3521,
@@ -52,11 +52,12 @@ const GpsMap = ({ data }: GpsMapProps) => {
   const { toast } = useToast();
   const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
   const defaultPosition: [number, number] = [1.3521, 103.8198]; // Singapore coordinates
+
+  // Use sample data if no data is provided
   const displayData = data.length > 0 ? data : sampleData;
 
   useEffect(() => {
-    // Only get current location if we don't have any data
-    if (displayData.length === 0) {
+    if (!data.length) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setCurrentLocation([position.coords.latitude, position.coords.longitude]);
@@ -70,15 +71,15 @@ const GpsMap = ({ data }: GpsMapProps) => {
         }
       );
     }
-  }, []); // Empty dependency array to run only once
+  }, [data.length, toast]);
 
   return (
     <div style={{ height: "100%", width: "100%" }}>
       <MapContainer
+        style={{ height: "100%", width: "100%" }}
         center={defaultPosition}
         zoom={13}
         scrollWheelZoom={false}
-        style={{ height: "100%", width: "100%" }}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -107,7 +108,7 @@ const GpsMap = ({ data }: GpsMapProps) => {
             </Marker>
           ) : null
         ))}
-        {currentLocation && displayData.length === 0 && (
+        {currentLocation && !data.length && (
           <Marker position={currentLocation}>
             <Popup>
               <div>
