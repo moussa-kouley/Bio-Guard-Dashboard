@@ -2,19 +2,16 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Card } from "@/components/ui/card";
-import { Upload, FileType, AlertCircle } from "lucide-react";
+import { Upload, AlertCircle } from "lucide-react";
 import { createClient } from '@supabase/supabase-js';
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_ANON_KEY
 );
 
-const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true
-});
+const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
 const ImagePrediction = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -27,36 +24,35 @@ const ImagePrediction = () => {
     }
   };
 
-  const analyzeImageWithGPT = async (imageUrl: string) => {
-    try {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4-vision-preview",
-        messages: [
-          {
-            role: "user",
-            content: [
-              { 
-                type: "text", 
-                text: "Analyze this water hyacinth image and provide: 1. Estimated coverage percentage 2. Growth rate prediction 3. Water quality impact. Format as JSON." 
-              },
-              {
-                type: "image_url",
-                image_url: imageUrl,
-              },
-            ],
-          },
-        ],
-        max_tokens: 500,
-      });
+  const fileToGenerativePart = async (file: File) => {
+    const buffer = await file.arrayBuffer();
+    return {
+      inlineData: {
+        data: Buffer.from(buffer).toString('base64'),
+        mimeType: file.type
+      },
+    };
+  };
 
-      const analysis = JSON.parse(response.choices[0].message.content || '{}');
+  const analyzeImageWithGemini = async (file: File) => {
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+      
+      const prompt = "Analyze this water hyacinth image and provide: 1. Estimated coverage percentage 2. Growth rate prediction 3. Water quality impact. Format response as JSON with keys: coverage_percentage, growth_rate, water_quality_impact";
+      
+      const imagePart = await fileToGenerativePart(file);
+      const result = await model.generateContent([prompt, imagePart]);
+      const response = await result.response;
+      const text = response.text();
+      
+      const analysis = JSON.parse(text);
       return {
         coverage: analysis.coverage_percentage || 0,
         growth_rate: analysis.growth_rate || 0,
         water_quality: analysis.water_quality_impact || 0,
       };
     } catch (error) {
-      console.error('GPT Analysis error:', error);
+      console.error('Gemini Analysis error:', error);
       throw error;
     }
   };
@@ -81,13 +77,8 @@ const ImagePrediction = () => {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL for the uploaded image
-      const { data: { publicUrl } } = supabase.storage
-        .from('water-hyacinth-images')
-        .getPublicUrl(uploadData.path);
-
-      // Analyze image with GPT
-      const prediction = await analyzeImageWithGPT(publicUrl);
+      // Analyze image with Gemini
+      const prediction = await analyzeImageWithGemini(selectedFile);
 
       // Store prediction in database
       const { error: dbError } = await supabase
