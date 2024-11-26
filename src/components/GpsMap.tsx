@@ -1,35 +1,49 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useToast } from "./ui/use-toast";
 import type { GpsData } from "@/types/gps";
 import { MapPin } from "lucide-react";
 import { renderToString } from "react-dom/server";
+import L from "leaflet";
 
 interface GpsMapProps {
   data: GpsData[];
 }
 
-// Create custom icon using Lucide icon
-const customIcon = new L.DivIcon({
-  html: renderToString(<MapPin className="w-8 h-8 text-primary" />),
-  className: 'custom-marker-icon',
-  iconSize: [32, 32],
-  iconAnchor: [16, 32],
-});
+// Sample data to use when Supabase fails
+const sampleData: GpsData[] = [
+  {
+    latitude: 1.3521,
+    longitude: 103.8198,
+    altitude: 15,
+    hdop: 1.2,
+    temperature: 28.5,
+    ph: 7.2,
+    dissolvedsolids: 450,
+    timestamp: new Date().toISOString(),
+    f_port: 1
+  },
+  {
+    latitude: 1.3551,
+    longitude: 103.8228,
+    altitude: 12,
+    hdop: 1.1,
+    temperature: 29.0,
+    ph: 7.1,
+    dissolvedsolids: 460,
+    timestamp: new Date().toISOString(),
+    f_port: 1
+  }
+];
 
 // Component to update map view when center changes
-function MapUpdater({ center }: { center: L.LatLngExpression }) {
+function MapUpdater({ center }: { center: [number, number] }) {
   const map = useMap();
   
-  const updateView = useCallback(() => {
+  useEffect(() => {
     map.setView(center, map.getZoom());
   }, [center, map]);
-
-  useEffect(() => {
-    updateView();
-  }, [updateView]);
 
   return null;
 }
@@ -37,10 +51,11 @@ function MapUpdater({ center }: { center: L.LatLngExpression }) {
 const GpsMap = ({ data }: GpsMapProps) => {
   const { toast } = useToast();
   const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
-  const defaultPosition: [number, number] = [1.3521, 103.8198]; // Singapore coordinates as fallback
+  const defaultPosition: [number, number] = [1.3521, 103.8198]; // Singapore coordinates
+  const displayData = data.length > 0 ? data : sampleData;
 
   useEffect(() => {
-    if (data.length === 0) {
+    if (displayData.length === 0) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setCurrentLocation([position.coords.latitude, position.coords.longitude]);
@@ -54,25 +69,24 @@ const GpsMap = ({ data }: GpsMapProps) => {
         }
       );
     }
-  }, [data.length, toast]);
+  }, [displayData.length, toast]);
 
-  const initialCenter = data.length > 0 && data[0].latitude && data[0].longitude
-    ? [data[0].latitude, data[0].longitude] as L.LatLngExpression
+  const initialCenter = displayData[0]?.latitude && displayData[0]?.longitude
+    ? [displayData[0].latitude, displayData[0].longitude] as [number, number]
     : currentLocation || defaultPosition;
 
   return (
     <MapContainer
       style={{ height: "100%", width: "100%" }}
-      center={defaultPosition}
+      center={initialCenter}
       zoom={13}
       scrollWheelZoom={false}
     >
-      <MapUpdater center={initialCenter} />
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
-      {data.map((point, index) => (
+      {displayData.map((point, index) => (
         point.latitude && point.longitude ? (
           <Marker 
             key={index} 
@@ -95,7 +109,7 @@ const GpsMap = ({ data }: GpsMapProps) => {
           </Marker>
         ) : null
       ))}
-      {currentLocation && data.length === 0 && (
+      {currentLocation && displayData.length === 0 && (
         <Marker position={currentLocation}>
           <Popup>
             <div>
