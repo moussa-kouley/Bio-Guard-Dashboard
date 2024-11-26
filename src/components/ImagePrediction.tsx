@@ -8,7 +8,6 @@ import { analyzeImageWithGemini, saveAnalysisToDatabase, type AnalysisResult } f
 const ImagePrediction = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const { toast } = useToast();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -34,7 +33,7 @@ const ImagePrediction = () => {
   };
 
   const handleUpload = async () => {
-    if (!selectedFiles.length || currentFileIndex >= selectedFiles.length) {
+    if (!selectedFiles.length) {
       toast({
         title: "No files to analyze",
         description: "Please select images to analyze",
@@ -46,27 +45,30 @@ const ImagePrediction = () => {
     setIsLoading(true);
 
     try {
-      const currentFile = selectedFiles[currentFileIndex];
-      const prediction = await analyzeImageWithGemini(currentFile);
-      await saveAnalysisToDatabase(prediction);
-      dispatchAnalysisEvent(prediction);
+      // Analyze all images and calculate average metrics
+      const predictions = await Promise.all(selectedFiles.map(file => analyzeImageWithGemini(file)));
+      
+      const averagePrediction: AnalysisResult = {
+        coverage: predictions.reduce((sum, p) => sum + p.coverage, 0) / predictions.length,
+        growth_rate: predictions.reduce((sum, p) => sum + p.growth_rate, 0) / predictions.length,
+        water_quality: predictions.reduce((sum, p) => sum + p.water_quality, 0) / predictions.length,
+        raw_analysis: `Combined analysis of ${predictions.length} images: ${predictions.map(p => p.raw_analysis).join(' ')}`,
+      };
+
+      await saveAnalysisToDatabase(averagePrediction);
+      dispatchAnalysisEvent(averagePrediction);
 
       toast({
-        title: `Analysis Complete (${currentFileIndex + 1}/${selectedFiles.length})`,
-        description: `Coverage: ${prediction.coverage}%, Growth Rate: ${prediction.growth_rate}%`,
+        title: "Analysis Complete",
+        description: `Analyzed ${selectedFiles.length} images. Average Coverage: ${averagePrediction.coverage.toFixed(1)}%, Growth Rate: ${averagePrediction.growth_rate.toFixed(1)}%`,
       });
 
-      if (currentFileIndex < selectedFiles.length - 1) {
-        setCurrentFileIndex(prev => prev + 1);
-      } else {
-        setSelectedFiles([]);
-        setCurrentFileIndex(0);
-      }
+      setSelectedFiles([]);
     } catch (error) {
       console.error('Error:', error);
       toast({
         title: "Analysis Failed",
-        description: "Error analyzing image",
+        description: "Error analyzing images",
         variant: "destructive",
       });
     } finally {
@@ -88,7 +90,7 @@ const ImagePrediction = () => {
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Analyzing ({currentFileIndex + 1}/{selectedFiles.length})...
+            Analyzing {selectedFiles.length} images...
           </>
         ) : (
           "Analyze Images"

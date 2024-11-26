@@ -1,22 +1,8 @@
-import React from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import { useToast } from "./ui/use-toast";
-import type { GpsData } from "@/types/gps";
-import L from "leaflet";
-
-// Fix Leaflet default icon issue
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-
-let DefaultIcon = L.icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41]
-});
-
-L.Marker.prototype.options.icon = DefaultIcon;
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { useToast } from "@/components/ui/use-toast";
+import type { GpsData } from '@/types/gps';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 interface GpsMapProps {
   data: GpsData[];
@@ -25,13 +11,13 @@ interface GpsMapProps {
 const GpsMap = ({ data }: GpsMapProps) => {
   const { toast } = useToast();
   // Hartbeespoort, South Africa coordinates
-  const defaultPosition: [number, number] = [-25.7487, 27.8739];
+  const defaultPosition: L.LatLngExpression = [-25.7487, 27.8739];
 
   return (
     <div style={{ height: "100%", width: "100%" }}>
       <MapContainer
-        defaultCenter={defaultPosition}
-        defaultZoom={13}
+        center={defaultPosition}
+        zoom={13}
         scrollWheelZoom={false}
         style={{ height: "100%", width: "100%" }}
       >
@@ -39,40 +25,23 @@ const GpsMap = ({ data }: GpsMapProps) => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
-        {data.map((point, index) => (
-          point.latitude && point.longitude ? (
-            <Marker 
-              key={index} 
-              position={[point.latitude, point.longitude] as L.LatLngExpression}
-            >
-              <Popup>
-                <div className="space-y-2">
-                  <h3 className="font-semibold">GPS Data Point {index + 1}</h3>
-                  <p><strong>Latitude:</strong> {point.latitude.toFixed(6)}</p>
-                  <p><strong>Longitude:</strong> {point.longitude.toFixed(6)}</p>
-                  <p><strong>Altitude:</strong> {point.altitude ? `${point.altitude}m` : 'N/A'}</p>
-                  <p><strong>HDOP:</strong> {point.hdop || 'N/A'}</p>
-                  <p><strong>Temperature:</strong> {point.temperature ? `${point.temperature}°C` : 'N/A'}</p>
-                  <p><strong>pH:</strong> {point.ph || 'N/A'}</p>
-                  <p><strong>Dissolved Solids:</strong> {point.dissolvedsolids || 'N/A'}</p>
-                  <p><strong>Port:</strong> {point.f_port || 'N/A'}</p>
-                  <p><strong>Timestamp:</strong> {new Date(point.timestamp).toLocaleString()}</p>
-                </div>
-              </Popup>
-            </Marker>
-          ) : null
-        ))}
-        {!data.length && (
-          <Marker position={defaultPosition}>
+        {data.map((entry, index) => (
+          <Marker key={index} position={[entry.latitude, entry.longitude]}>
             <Popup>
               <div>
-                <h3 className="font-semibold">Current Location</h3>
-                <p><strong>Latitude:</strong> {defaultPosition[0].toFixed(6)}</p>
-                <p><strong>Longitude:</strong> {defaultPosition[1].toFixed(6)}</p>
+                <h2>Data Point</h2>
+                <p>Latitude: {entry.latitude}</p>
+                <p>Longitude: {entry.longitude}</p>
+                <p>Altitude: {entry.altitude} m</p>
+                <p>HDOP: {entry.hdop}</p>
+                <p>Temperature: {entry.temperature} °C</p>
+                <p>pH: {entry.ph}</p>
+                <p>Dissolved Solids: {entry.dissolvedsolids} mg/L</p>
+                <p>Timestamp: {entry.timestamp}</p>
               </div>
             </Popup>
           </Marker>
-        )}
+        ))}
       </MapContainer>
     </div>
   );
