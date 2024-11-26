@@ -31,7 +31,7 @@ const GpsMap = ({ data }: GpsMapProps) => {
     <div style={{ height: "100%", width: "100%" }}>
       <MapContainer
         style={{ height: "100%", width: "100%" }}
-        center={defaultCenter}
+        center={defaultCenter as L.LatLngExpression}
         zoom={13}
         scrollWheelZoom={true}
       >
@@ -43,7 +43,7 @@ const GpsMap = ({ data }: GpsMapProps) => {
           point.latitude && point.longitude ? (
             <Marker 
               key={index} 
-              position={[point.latitude, point.longitude]}
+              position={[point.latitude, point.longitude] as L.LatLngExpression}
             >
               <Popup>
                 <div className="space-y-2">
@@ -63,7 +63,7 @@ const GpsMap = ({ data }: GpsMapProps) => {
           ) : null
         ))}
         {!data.length && (
-          <Marker position={defaultCenter}>
+          <Marker position={defaultCenter as L.LatLngExpression}>
             <Popup>
               <div>
                 <h3 className="font-semibold">Current Location</h3>
