@@ -8,6 +8,7 @@ import { loadModel, makePrediction } from "@/utils/modelLoader";
 type ImagePrediction = {
   image: HTMLImageElement;
   prediction: number[] | null;
+  error?: string;
 };
 
 export const ImagePredictor = () => {
@@ -20,37 +21,78 @@ export const ImagePredictor = () => {
     if (!files?.length) return;
 
     setIsLoading(true);
+    let model;
+    
     try {
-      const model = await loadModel();
-      
-      // Process each file
-      const fileArray = Array.from(files);
-      const processImage = async (file: File): Promise<ImagePrediction> => {
-        return new Promise((resolve) => {
-          const img = new Image();
-          img.src = URL.createObjectURL(file);
-          
-          img.onload = async () => {
+      model = await loadModel();
+    } catch (error) {
+      setIsLoading(false);
+      toast({
+        title: "Model Loading Error",
+        description: "Failed to load the prediction model. Please try again later.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Process each file
+    const fileArray = Array.from(files);
+    const processImage = async (file: File): Promise<ImagePrediction> => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.src = URL.createObjectURL(file);
+        
+        img.onload = async () => {
+          try {
             const prediction = await makePrediction(model, img);
             resolve({
               image: img,
               prediction: Array.from(prediction)
             });
-          };
-        });
-      };
+          } catch (error) {
+            resolve({
+              image: img,
+              prediction: null,
+              error: "Failed to process image"
+            });
+          }
+        };
 
+        img.onerror = () => {
+          resolve({
+            image: img,
+            prediction: null,
+            error: "Failed to load image"
+          });
+        };
+      });
+    };
+
+    try {
       const newPredictions = await Promise.all(fileArray.map(processImage));
       setPredictions(prev => [...prev, ...newPredictions]);
       
-      toast({
-        title: "Prediction Complete",
-        description: `Successfully analyzed ${fileArray.length} images.`,
-      });
+      const successCount = newPredictions.filter(p => !p.error).length;
+      const errorCount = newPredictions.filter(p => p.error).length;
+      
+      if (successCount > 0) {
+        toast({
+          title: "Processing Complete",
+          description: `Successfully analyzed ${successCount} image${successCount !== 1 ? 's' : ''}${
+            errorCount > 0 ? `. Failed to process ${errorCount} image${errorCount !== 1 ? 's' : ''}.` : '.'
+          }`,
+        });
+      } else {
+        toast({
+          title: "Processing Failed",
+          description: "Failed to process all images. Please try again.",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to process one or more images.",
+        description: "An unexpected error occurred while processing images.",
         variant: "destructive",
       });
     } finally {
@@ -103,7 +145,11 @@ export const ImagePredictor = () => {
                 alt={`Uploaded ${index + 1}`}
                 className="w-full rounded-lg"
               />
-              {pred.prediction && (
+              {pred.error ? (
+                <div className="text-sm text-red-500">
+                  Error: {pred.error}
+                </div>
+              ) : pred.prediction && (
                 <div className="text-sm">
                   <p>Prediction Results:</p>
                   <pre className="bg-gray-100 p-2 rounded text-xs">
