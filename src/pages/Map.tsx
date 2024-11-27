@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { CalendarDays, Clock } from "lucide-react";
 import { format } from "date-fns";
-import GpsMap from "@/components/GpsMap";
+import { GpsMap } from "@/components/GpsMap";
 import { createClient } from '@supabase/supabase-js';
 import { useQuery } from '@tanstack/react-query';
 import { MapFilters } from "@/components/map/MapFilters";

@@ -13,10 +13,10 @@ L.Icon.Default.mergeOptions({
 
 interface GpsMapProps {
   data: GpsData[];
-  selectedTimeRange: string;
+  selectedTimeRange?: string;
 }
 
-export const GpsMap = ({ data, selectedTimeRange }: GpsMapProps) => {
+const GpsMap = ({ data, selectedTimeRange = 'all' }: GpsMapProps) => {
   const defaultPosition: [number, number] = [1.3521, 103.8198];  // Default to Singapore coordinates
 
   const displayData = data.filter(point => {
@@ -40,14 +40,14 @@ export const GpsMap = ({ data, selectedTimeRange }: GpsMapProps) => {
   return (
     <div style={{ height: "100%", width: "100%" }}>
       <MapContainer
-        center={defaultPosition}
+        style={{ height: "100%", width: "100%" }}
         zoom={13}
         scrollWheelZoom={false}
-        style={{ height: "100%", width: "100%" }}
+        center={defaultPosition}
       >
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {displayData.map((point, index) => (
           point.latitude && point.longitude ? (
@@ -69,3 +69,5 @@ export const GpsMap = ({ data, selectedTimeRange }: GpsMapProps) => {
     </div>
   );
 };
+
+export default GpsMap;
