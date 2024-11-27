@@ -13,11 +13,12 @@ async function loadModelOnce() {
   if (!model) {
     try {
       console.log('Loading model...');
+      // Ensure the path matches where the converted model is saved
       model = await tf.loadLayersModel('/model/model.json');
       console.log('Model loaded successfully');
     } catch (error) {
       console.error('Error loading model:', error);
-      throw new Error('Failed to load model');
+      throw new Error('Failed to load model - please ensure model files exist in public/model directory');
     }
   }
   return model;
