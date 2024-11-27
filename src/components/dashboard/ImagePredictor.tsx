@@ -9,6 +9,7 @@ type ImagePrediction = {
   image: HTMLImageElement;
   prediction: number[] | null;
   error?: string;
+  confidence?: number;
 };
 
 export const ImagePredictor = () => {
@@ -35,8 +36,6 @@ export const ImagePredictor = () => {
       return;
     }
 
-    // Process each file
-    const fileArray = Array.from(files);
     const processImage = async (file: File): Promise<ImagePrediction> => {
       return new Promise((resolve) => {
         const img = new Image();
@@ -45,9 +44,12 @@ export const ImagePredictor = () => {
         img.onload = async () => {
           try {
             const prediction = await makePrediction(model, img);
+            // Calculate confidence score (assuming binary classification)
+            const confidence = prediction[0] * 100;
             resolve({
               image: img,
-              prediction: Array.from(prediction)
+              prediction: Array.from(prediction),
+              confidence
             });
           } catch (error) {
             resolve({
@@ -69,26 +71,18 @@ export const ImagePredictor = () => {
     };
 
     try {
-      const newPredictions = await Promise.all(fileArray.map(processImage));
+      const newPredictions = await Promise.all(Array.from(files).map(processImage));
       setPredictions(prev => [...prev, ...newPredictions]);
       
       const successCount = newPredictions.filter(p => !p.error).length;
       const errorCount = newPredictions.filter(p => p.error).length;
       
-      if (successCount > 0) {
-        toast({
-          title: "Processing Complete",
-          description: `Successfully analyzed ${successCount} image${successCount !== 1 ? 's' : ''}${
-            errorCount > 0 ? `. Failed to process ${errorCount} image${errorCount !== 1 ? 's' : ''}.` : '.'
-          }`,
-        });
-      } else {
-        toast({
-          title: "Processing Failed",
-          description: "Failed to process all images. Please try again.",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Processing Complete",
+        description: `Analyzed ${successCount} image${successCount !== 1 ? 's' : ''}${
+          errorCount > 0 ? `. Failed to process ${errorCount} image${errorCount !== 1 ? 's' : ''}.` : '.'
+        }`,
+      });
     } catch (error) {
       toast({
         title: "Error",
@@ -149,12 +143,16 @@ export const ImagePredictor = () => {
                 <div className="text-sm text-red-500">
                   Error: {pred.error}
                 </div>
-              ) : pred.prediction && (
-                <div className="text-sm">
-                  <p>Prediction Results:</p>
-                  <pre className="bg-gray-100 p-2 rounded text-xs">
-                    {JSON.stringify(pred.prediction, null, 2)}
-                  </pre>
+              ) : (
+                <div className="text-sm space-y-1">
+                  <p className="font-medium">
+                    {pred.confidence && pred.confidence > 50 
+                      ? "Water Hyacinth Detected" 
+                      : "No Water Hyacinth Detected"}
+                  </p>
+                  <p className="text-gray-600">
+                    Confidence: {pred.confidence?.toFixed(1)}%
+                  </p>
                 </div>
               )}
             </div>
