@@ -23,11 +23,18 @@ export async function loadModel() {
     const weightFiles = weightsManifest.flatMap(group => group.paths);
     console.log('Required weight files:', weightFiles);
     
-    // Try to load the model
-    const model = await tf.loadLayersModel('/model/model.json');
+    // Try to load the model with input shape configuration
+    const model = await tf.loadLayersModel('/model/model.json', {
+      strict: false
+    });
     
     if (!model) {
       throw new Error('Model failed to load - model is null');
+    }
+
+    // Ensure the model has proper input shape
+    if (!model.inputs[0].shape) {
+      model.layers[0].batchInputShape = [null, 224, 224, 3];
     }
     
     console.log('Model loaded successfully');
@@ -46,7 +53,7 @@ export async function preprocessImage(imageData: HTMLImageElement) {
   return tf.tidy(() => {
     // Convert the image to a tensor
     let tensor = tf.browser.fromPixels(imageData)
-      // Resize to match the model's expected size (224x224 is common)
+      // Resize to match the model's expected size (224x224)
       .resizeBilinear([224, 224])
       // Normalize pixel values to [0,1]
       .toFloat()
