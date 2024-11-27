@@ -39,6 +39,11 @@ const Index = () => {
     navigate("/map");
   };
 
+  const fillDemoCredentials = () => {
+    setUsername("demo");
+    setPassword("demo");
+  };
+
   return (
     <div className="min-h-screen flex">
       {/* Left side with logo and description */}
@@ -95,21 +100,32 @@ const Index = () => {
               </div>
             </div>
 
-            <div className="flex gap-4">
+            <div className="space-y-4">
               <Button 
-                type="submit" 
-                className="flex-1 h-12 bg-green-500 hover:bg-green-600"
-              >
-                Log In
-              </Button>
-              <Button
                 type="button"
-                variant="outline"
-                className="flex-1 h-12 bg-green-500 hover:bg-green-600 text-white border-0"
-                onClick={handleContinueWithoutLogin}
+                variant="secondary"
+                className="w-full h-12"
+                onClick={fillDemoCredentials}
               >
-                Continue without logging in
+                Fill Demo Credentials
               </Button>
+
+              <div className="flex gap-4">
+                <Button 
+                  type="submit" 
+                  className="flex-1 h-12 bg-green-500 hover:bg-green-600"
+                >
+                  Log In
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 h-12 bg-green-500 hover:bg-green-600 text-white border-0"
+                  onClick={handleContinueWithoutLogin}
+                >
+                  Continue without logging in
+                </Button>
+              </div>
             </div>
           </form>
 
