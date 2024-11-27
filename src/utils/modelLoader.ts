@@ -5,8 +5,8 @@ export async function loadModel() {
     await tf.ready();
     console.log('Loading model...');
     
-    // Use the correct path that includes 'public'
-    const model = await tf.loadLayersModel('/model/model.json');
+    // Use the correct path to the converted model
+    const model = await tf.loadLayersModel('/model/water_hyacinth_modelV2/model.json');
     
     if (!model) {
       throw new Error('Model failed to load - model is null');
@@ -16,7 +16,6 @@ export async function loadModel() {
     return model;
   } catch (error) {
     console.error('Error loading model:', error);
-    // Provide more detailed error information
     throw new Error(
       error instanceof Error 
         ? `Failed to load model: ${error.message}`
