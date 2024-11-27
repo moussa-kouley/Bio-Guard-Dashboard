@@ -22,19 +22,25 @@ export async function loadModel() {
     // Log the expected weight files
     const weightFiles = weightsManifest.flatMap(group => group.paths);
     console.log('Required weight files:', weightFiles);
-    
-    // Try to load the model with input shape configuration
+
+    // Configure the model with explicit input shape
     const model = await tf.loadLayersModel('/model/model.json', {
-      strict: false
+      strict: true,
+      layers: {
+        InputLayer: {
+          className: 'InputLayer',
+          config: {
+            batchInputShape: [null, 224, 224, 3],
+            dtype: 'float32',
+            sparse: false,
+            name: 'input_1'
+          }
+        }
+      }
     });
     
     if (!model) {
       throw new Error('Model failed to load - model is null');
-    }
-
-    // Ensure the model has proper input shape
-    if (!model.inputs[0].shape) {
-      model.layers[0].batchInputShape = [null, 224, 224, 3];
     }
     
     console.log('Model loaded successfully');

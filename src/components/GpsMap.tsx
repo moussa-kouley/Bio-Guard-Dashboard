@@ -75,7 +75,7 @@ const GpsMap = ({ data }: GpsMapProps) => {
   return (
     <div style={{ height: "100%", width: "100%" }}>
       <MapContainer
-        center={defaultPosition}
+        defaultCenter={defaultPosition}
         zoom={13}
         scrollWheelZoom={false}
         style={{ height: "100%", width: "100%" }}
