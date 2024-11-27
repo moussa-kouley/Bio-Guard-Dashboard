@@ -75,15 +75,14 @@ const GpsMap = ({ data }: GpsMapProps) => {
   return (
     <div style={{ height: "100%", width: "100%" }}>
       <MapContainer
-        center={defaultPosition}
-        zoom={13}
+        defaultCenter={defaultPosition}
+        defaultZoom={13}
         scrollWheelZoom={false}
         style={{ height: "100%", width: "100%" }}
-        key={`${defaultPosition[0]}-${defaultPosition[1]}`}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         {displayData.map((point, index) => (
           point.latitude && point.longitude ? (

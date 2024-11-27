@@ -5,13 +5,23 @@ export async function loadModel() {
     await tf.ready();
     console.log('Loading model...');
     
-    // Load model from the correct path
+    // Use the correct path that includes 'public'
     const model = await tf.loadLayersModel('/model/model.json');
+    
+    if (!model) {
+      throw new Error('Model failed to load - model is null');
+    }
+    
     console.log('Model loaded successfully');
     return model;
   } catch (error) {
     console.error('Error loading model:', error);
-    throw error;
+    // Provide more detailed error information
+    throw new Error(
+      error instanceof Error 
+        ? `Failed to load model: ${error.message}`
+        : 'Failed to load model: Unknown error'
+    );
   }
 }
 
@@ -42,7 +52,11 @@ export async function makePrediction(model: tf.LayersModel, imageData: HTMLImage
     return data;
   } catch (error) {
     console.error('Error making prediction:', error);
-    throw error;
+    throw new Error(
+      error instanceof Error 
+        ? `Failed to process image: ${error.message}`
+        : 'Failed to process image: Unknown error'
+    );
   } finally {
     if (tensor) {
       tensor.dispose();
