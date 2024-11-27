@@ -48,14 +48,13 @@ const GpsMap = ({ data }: GpsMapProps) => {
   return (
     <div style={{ height: "100%", width: "100%" }}>
       <MapContainer
-        defaultCenter={defaultPosition}
+        center={defaultPosition}
         zoom={13}
         scrollWheelZoom={false}
         style={{ height: "100%", width: "100%" }}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attributionControl={true}
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         {displayData.map((point, index) => (
@@ -75,6 +74,7 @@ const GpsMap = ({ data }: GpsMapProps) => {
                   <p><strong>pH:</strong> {point.ph || 'N/A'}</p>
                   <p><strong>Dissolved Solids:</strong> {point.dissolvedsolids || 'N/A'}</p>
                   <p><strong>Port:</strong> {point.f_port || 'N/A'}</p>
+                  <p><strong>Growth Prediction:</strong> {point.hdop ? `${(point.hdop * 0.1).toFixed(1)}%` : 'N/A'}</p>
                   <p><strong>Timestamp:</strong> {new Date(point.timestamp).toLocaleString()}</p>
                 </div>
               </Popup>

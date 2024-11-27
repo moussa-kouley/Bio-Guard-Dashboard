@@ -8,6 +8,8 @@ import { createClient } from '@supabase/supabase-js';
 import { useQuery } from '@tanstack/react-query';
 import { MapFilters } from "@/components/map/MapFilters";
 import { LatestMeasurements } from "@/components/map/LatestMeasurements";
+import TemperatureChart from "@/components/TemperatureChart";
+import { GrowthPredictor } from "@/components/predictions/GrowthPredictor";
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -18,13 +20,7 @@ const Map = () => {
   const { toast } = useToast();
   const [selectedRegion, setSelectedRegion] = useState("");
   const [selectedSeverity, setSelectedSeverity] = useState("");
-  const [selectedTimeframe, setSelectedTimeframe] = useState("current"); // "current", "12h", "1d", "3d"
-  const lastValidMeasurements = React.useRef({
-    temperature: null as number | null,
-    ph: null as number | null,
-    dissolvedsolids: null as number | null,
-    timestamp: null as string | null,
-  });
+  const [selectedTimeframe, setSelectedTimeframe] = useState("current");
 
   const { data: gpsData = [], isError } = useQuery({
     queryKey: ['gpsData', selectedTimeframe],
@@ -34,7 +30,6 @@ const Map = () => {
         .select('*')
         .order('timestamp', { ascending: false });
 
-      // Apply timeframe filter
       const now = new Date();
       if (selectedTimeframe === "12h") {
         const twelveHoursAgo = new Date(now.getTime() - (12 * 60 * 60 * 1000));
@@ -53,27 +48,6 @@ const Map = () => {
     },
     refetchInterval: 5000,
   });
-
-  // Update last valid measurements when new data arrives
-  React.useEffect(() => {
-    if (gpsData && gpsData[0]) {
-      const latestData = gpsData[0];
-      if (typeof latestData.temperature === 'number' && !isNaN(latestData.temperature)) {
-        lastValidMeasurements.current.temperature = latestData.temperature;
-      }
-      if (typeof latestData.ph === 'number' && !isNaN(latestData.ph)) {
-        lastValidMeasurements.current.ph = latestData.ph;
-      }
-      if (typeof latestData.dissolvedsolids === 'number' && !isNaN(latestData.dissolvedsolids)) {
-        lastValidMeasurements.current.dissolvedsolids = latestData.dissolvedsolids;
-      }
-      lastValidMeasurements.current.timestamp = latestData.timestamp;
-    }
-  }, [gpsData]);
-
-  const handleTimeframeClick = (timeframe: string) => {
-    setSelectedTimeframe(timeframe);
-  };
 
   if (isError) {
     toast({
@@ -118,7 +92,7 @@ const Map = () => {
               className={`p-4 cursor-pointer transition-colors text-center ${
                 selectedTimeframe === "current" ? "bg-primary text-primary-foreground" : "hover:bg-primary/10"
               }`}
-              onClick={() => handleTimeframeClick("current")}
+              onClick={() => setSelectedTimeframe("current")}
             >
               <span className="font-medium">Current Water Hyacinth</span>
             </Card>
@@ -126,7 +100,7 @@ const Map = () => {
               className={`p-4 cursor-pointer transition-colors text-center ${
                 selectedTimeframe === "12h" ? "bg-primary text-primary-foreground" : "hover:bg-primary/10"
               }`}
-              onClick={() => handleTimeframeClick("12h")}
+              onClick={() => setSelectedTimeframe("12h")}
             >
               <span className="font-medium">Prediction 12 hours</span>
             </Card>
@@ -134,7 +108,7 @@ const Map = () => {
               className={`p-4 cursor-pointer transition-colors text-center ${
                 selectedTimeframe === "1d" ? "bg-primary text-primary-foreground" : "hover:bg-primary/10"
               }`}
-              onClick={() => handleTimeframeClick("1d")}
+              onClick={() => setSelectedTimeframe("1d")}
             >
               <span className="font-medium">Prediction 1 day</span>
             </Card>
@@ -142,7 +116,7 @@ const Map = () => {
               className={`p-4 cursor-pointer transition-colors text-center ${
                 selectedTimeframe === "3d" ? "bg-primary text-primary-foreground" : "hover:bg-primary/10"
               }`}
-              onClick={() => handleTimeframeClick("3d")}
+              onClick={() => setSelectedTimeframe("3d")}
             >
               <span className="font-medium">Prediction 3 days</span>
             </Card>
@@ -150,7 +124,12 @@ const Map = () => {
         </div>
 
         <div className="space-y-4">
-          <LatestMeasurements measurements={lastValidMeasurements.current} />
+          <LatestMeasurements measurements={gpsData[0]} />
+          <Card className="p-4">
+            <h3 className="font-semibold mb-4">Temperature Trend</h3>
+            <TemperatureChart data={gpsData} />
+          </Card>
+          <GrowthPredictor data={gpsData} />
         </div>
       </div>
     </div>
