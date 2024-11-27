@@ -22,39 +22,48 @@ export const ImagePredictor = () => {
 
     setIsLoading(true);
 
-    const processImage = async (file: File): Promise<ProcessedImage | null> => {
-      return new Promise((resolve) => {
-        const img = new Image();
-        img.src = URL.createObjectURL(file);
-        
-        img.onload = async () => {
-          try {
-            const analysis = await analyzeImage(img);
-            resolve({
-              src: img.src,
-              analysis
-            });
-          } catch (error) {
-            console.error('Error processing image:', error);
-            resolve(null);
-          }
-        };
-
-        img.onerror = () => resolve(null);
-      });
-    };
-
     try {
-      const results = await Promise.all(Array.from(files).map(processImage));
-      const validResults = results.filter((result): result is ProcessedImage => result !== null);
-      
-      setProcessedImages(prev => [...prev, ...validResults]);
-      
-      toast({
-        title: "Analysis Complete",
-        description: `Successfully analyzed ${validResults.length} images`,
-      });
+      const newImages: ProcessedImage[] = [];
+
+      for (const file of Array.from(files)) {
+        try {
+          // Create an image element and wait for it to load
+          const img = new Image();
+          const imageLoadPromise = new Promise<HTMLImageElement>((resolve, reject) => {
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error('Failed to load image'));
+          });
+          img.src = URL.createObjectURL(file);
+
+          // Wait for image to load
+          const loadedImg = await imageLoadPromise;
+          
+          // Analyze the image
+          const analysis = await analyzeImage(loadedImg);
+          
+          newImages.push({
+            src: img.src,
+            analysis
+          });
+        } catch (error) {
+          console.error('Error processing individual image:', error);
+          toast({
+            title: "Processing Error",
+            description: `Failed to process image: ${file.name}`,
+            variant: "destructive",
+          });
+        }
+      }
+
+      if (newImages.length > 0) {
+        setProcessedImages(prev => [...prev, ...newImages]);
+        toast({
+          title: "Analysis Complete",
+          description: `Successfully analyzed ${newImages.length} images`,
+        });
+      }
     } catch (error) {
+      console.error('Error in handleImageUpload:', error);
       toast({
         title: "Error",
         description: "Failed to analyze images",
