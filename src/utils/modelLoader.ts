@@ -5,7 +5,25 @@ export async function loadModel() {
     await tf.ready();
     console.log('Loading model...');
     
-    // Use the correct path to the converted model
+    // First check if model.json exists by making a fetch request
+    const modelJsonResponse = await fetch('/model/water_hyacinth_modelV2/model.json');
+    if (!modelJsonResponse.ok) {
+      throw new Error(`model.json not found at /model/water_hyacinth_modelV2/model.json`);
+    }
+
+    const modelJson = await modelJsonResponse.json();
+    
+    // Check if weights files exist
+    const weightsManifest = modelJson.weightsManifest;
+    if (!weightsManifest || weightsManifest.length === 0) {
+      throw new Error('No weights manifest found in model.json');
+    }
+
+    // Log the expected weight files
+    const weightFiles = weightsManifest.flatMap(group => group.paths);
+    console.log('Required weight files:', weightFiles);
+    
+    // Try to load the model
     const model = await tf.loadLayersModel('/model/water_hyacinth_modelV2/model.json');
     
     if (!model) {
