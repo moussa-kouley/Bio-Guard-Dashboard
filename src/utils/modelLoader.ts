@@ -6,9 +6,9 @@ export async function loadModel() {
     console.log('Loading model...');
     
     // First check if model.json exists by making a fetch request
-    const modelJsonResponse = await fetch('/model/model.json');
+    const modelJsonResponse = await fetch('/model/water_hyacinth_modelV2/model.json');
     if (!modelJsonResponse.ok) {
-      throw new Error(`model.json not found at /model/model.json`);
+      throw new Error(`model.json not found at /model/water_hyacinth_modelV2/model.json`);
     }
 
     const modelJson = await modelJsonResponse.json();
@@ -24,7 +24,7 @@ export async function loadModel() {
     console.log('Required weight files:', weightFiles);
     
     // Try to load the model
-    const model = await tf.loadLayersModel('/model/model.json');
+    const model = await tf.loadLayersModel('/model/water_hyacinth_modelV2/model.json');
     
     if (!model) {
       throw new Error('Model failed to load - model is null');

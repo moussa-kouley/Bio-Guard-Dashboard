@@ -82,7 +82,7 @@ const GpsMap = ({ data }: GpsMapProps) => {
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attributionUrl='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         {displayData.map((point, index) => (
           point.latitude && point.longitude ? (
