@@ -12,11 +12,11 @@ export async function analyzeImage(imageElement: HTMLImageElement): Promise<Imag
   const prediction = await makePrediction(tensor);
   
   // Calculate coverage based on prediction confidence
-  const coverage = prediction[0] * 100;
+  const coverage = prediction * 100;
   
   return {
     coverage,
-    confidence: prediction[0] * 100,
+    confidence: prediction * 100,
     timestamp: new Date().toISOString(),
   };
 }
@@ -33,14 +33,14 @@ async function preprocessImage(imageElement: HTMLImageElement): Promise<tf.Tenso
   });
 }
 
-async function makePrediction(tensor: tf.Tensor4D): Promise<Float32Array> {
+async function makePrediction(tensor: tf.Tensor4D): Promise<number> {
   try {
     const model = await tf.loadLayersModel('/model/model.json');
     const prediction = await model.predict(tensor) as tf.Tensor;
     const data = await prediction.data();
     prediction.dispose();
     tensor.dispose();
-    return data;
+    return data[0];
   } catch (error) {
     console.error('Prediction error:', error);
     throw new Error('Failed to make prediction');
