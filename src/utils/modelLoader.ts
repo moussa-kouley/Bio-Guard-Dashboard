@@ -12,35 +12,34 @@ export async function loadModel() {
 
     const modelJson = await modelJsonResponse.json();
     
-    // Add input shape configuration to model JSON
-    if (modelJson.modelTopology && 
-        modelJson.modelTopology.model_config && 
-        modelJson.modelTopology.model_config.config && 
-        modelJson.modelTopology.model_config.config.layers) {
-      
+    // Ensure input layer has correct shape configuration
+    if (modelJson.modelTopology?.model_config?.config?.layers) {
       const inputLayer = modelJson.modelTopology.model_config.config.layers.find(
         (layer: any) => layer.class_name === "InputLayer"
       );
       
       if (inputLayer) {
-        inputLayer.config.batch_input_shape = [null, 10, 224, 224, 3];
+        inputLayer.config = {
+          ...inputLayer.config,
+          batch_input_shape: [null, 10, 224, 224, 3],
+          dtype: "float32",
+          sparse: false,
+          name: "input_layer_1"
+        };
       }
     }
 
     const model = await tf.loadLayersModel(
-      tf.io.fromMemory(modelJson),
-      {
-        strict: true
-      }
+      tf.io.fromMemory(modelJson)
     );
     
     // Verify input shape
     const inputShape = model.inputs[0].shape;
-    console.log('Model loaded with input shape:', inputShape);
+    console.log('Model loaded successfully with input shape:', inputShape);
     
     return model;
   } catch (error) {
-    console.error('Error loading model:', error);
+    console.error('Detailed error loading model:', error);
     throw new Error(
       error instanceof Error 
         ? `Failed to load model: ${error.message}`
