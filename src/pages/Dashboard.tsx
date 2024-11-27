@@ -14,6 +14,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { MetricCards } from "@/components/dashboard/MetricCards";
+import { ImagePredictor } from "@/components/dashboard/ImagePredictor";
 import { createClient } from '@supabase/supabase-js';
 import { useQuery } from '@tanstack/react-query';
 import type { GpsData } from "@/types/gps";
@@ -119,7 +120,14 @@ const Dashboard = () => {
   return (
     <div className="p-6">
       <DashboardHeader latestData={latestData} />
-      <MetricCards latestData={latestData} data={gpsData} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="lg:col-span-2">
+          <MetricCards latestData={latestData} data={gpsData} />
+        </div>
+        <div className="lg:col-span-1">
+          <ImagePredictor />
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <Card className="p-4">
