@@ -18,27 +18,16 @@ async function loadModelOnce() {
       await tf.ready();
       console.log('TensorFlow.js initialized successfully');
       
-      // Load model with explicit input shape configuration
-      const modelConfig = {
-        batchInputShape: [null, 10, 224, 224, 3]
-      };
+      model = await tf.loadLayersModel(modelPath);
       
-      model = await tf.loadLayersModel(modelPath, {
-        strict: true,
-        extraModelConfig: modelConfig
-      });
+      // Verify model input shape
+      const inputShape = model.inputs[0].shape;
+      console.log('Model input shape:', inputShape);
       
       console.log('Model loaded successfully');
-      
-      // Warm up the model
-      const dummyInput = tf.zeros([1, 10, 224, 224, 3]);
-      const warmupResult = model.predict(dummyInput);
-      tf.dispose(warmupResult);
-      tf.dispose(dummyInput);
-      console.log('Model warmup completed');
     } catch (error) {
       console.error('Error loading model:', error);
-      throw error;
+      throw new Error(`Failed to load model: ${error.message}`);
     }
   }
   return model;
@@ -46,17 +35,18 @@ async function loadModelOnce() {
 
 async function preprocessImage(imageElement: HTMLImageElement): Promise<tf.Tensor> {
   return tf.tidy(() => {
-    // Convert the image to a tensor and preprocess
-    const tensor = tf.browser.fromPixels(imageElement)
+    // Convert the image to a tensor
+    let tensor = tf.browser.fromPixels(imageElement)
       .resizeBilinear([224, 224])
       .toFloat()
-      .div(255.0)
-      .expandDims(0);
+      .div(255.0);
     
-    // Create a sequence of 10 frames by repeating the image
-    const repeatedTensor = tf.tile(tensor, [1, 10, 1, 1, 1]);
-    console.log('Preprocessed tensor shape:', repeatedTensor.shape);
-    return repeatedTensor;
+    // Add batch and time dimensions [1, 10, 224, 224, 3]
+    tensor = tensor.expandDims(0).expandDims(0);
+    tensor = tf.tile(tensor, [1, 10, 1, 1, 1]);
+    
+    console.log('Preprocessed tensor shape:', tensor.shape);
+    return tensor;
   });
 }
 
@@ -82,7 +72,7 @@ export async function analyzeImage(imageElement: HTMLImageElement): Promise<Imag
     
     return {
       coverage: prediction * 100,
-      confidence: prediction * 100,
+      confidence: Math.min(prediction * 150, 100), // Scale confidence
       timestamp: new Date().toISOString()
     };
   } catch (error) {
