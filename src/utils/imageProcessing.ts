@@ -12,13 +12,21 @@ let model: tf.LayersModel | null = null;
 async function loadModelOnce() {
   if (!model) {
     try {
-      console.log('Loading model...');
-      // Ensure the path matches where the converted model is saved
-      model = await tf.loadLayersModel('/model/model.json');
-      console.log('Model loaded successfully');
+      console.log('Loading model from:', '/model/model.json');
+      // Wait for tf.js to initialize
+      await tf.ready();
+      // Load model with strict path
+      model = await tf.loadLayersModel(window.location.origin + '/model/model.json');
+      console.log('Model loaded successfully:', model);
+      // Warm up the model with a dummy prediction
+      const dummyData = tf.zeros([1, 224, 224, 3]);
+      const warmupResult = model.predict(dummyData);
+      tf.dispose(warmupResult);
+      tf.dispose(dummyData);
+      console.log('Model warmup completed');
     } catch (error) {
-      console.error('Error loading model:', error);
-      throw new Error('Failed to load model - please ensure model files exist in public/model directory');
+      console.error('Detailed error loading model:', error);
+      throw new Error(`Failed to load model: ${error.message}`);
     }
   }
   return model;
@@ -30,6 +38,9 @@ export async function analyzeImage(imageElement: HTMLImageElement): Promise<Imag
   try {
     // Ensure model is loaded
     const loadedModel = await loadModelOnce();
+    if (!loadedModel) {
+      throw new Error('Model failed to load');
+    }
     
     // Preprocess image
     tensor = await preprocessImage(imageElement);
