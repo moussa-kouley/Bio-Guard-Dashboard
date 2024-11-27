@@ -5,11 +5,10 @@ export async function loadModel() {
     // First ensure TensorFlow.js is properly initialized
     await tf.ready();
     
-    // Add console log to track model loading attempt
     console.log('Attempting to load model...');
     
-    // Load the model with explicit error handling and correct path for .keras format
-    const model = await tf.loadLayersModel('/model/water_hyacinth_modelV2.keras', {
+    // Load the model using the correct path for tfjs format
+    const model = await tf.loadLayersModel('/model/model.json', {
       onProgress: (fraction) => {
         console.log(`Model loading progress: ${(fraction * 100).toFixed(1)}%`);
       },
