@@ -1,100 +1,71 @@
-import React, { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import { useToast } from "./ui/use-toast";
-import type { GpsData } from "@/types/gps";
-import L from "leaflet";
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import { GpsData } from '@/types/gps';
+import L from 'leaflet';
 
-// Fix Leaflet default icon issue
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-
-let DefaultIcon = L.icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41]
+// Fix Leaflet default marker icon issue
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
-
-L.Marker.prototype.options.icon = DefaultIcon;
 
 interface GpsMapProps {
   data: GpsData[];
+  selectedTimeRange: string;
 }
 
-const GpsMap = ({ data }: GpsMapProps) => {
-  const { toast } = useToast();
-  const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
-  const defaultPosition: [number, number] = [1.3521, 103.8198]; // Singapore coordinates
-  const displayData = data.length > 0 ? data : [];
+export const GpsMap = ({ data, selectedTimeRange }: GpsMapProps) => {
+  const defaultPosition: [number, number] = [1.3521, 103.8198];  // Default to Singapore coordinates
 
-  useEffect(() => {
-    if (displayData.length === 0) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setCurrentLocation([position.coords.latitude, position.coords.longitude]);
-        },
-        () => {
-          toast({
-            title: "Location Error",
-            description: "Could not get current location. Using default position.",
-            variant: "destructive",
-          });
-        }
-      );
+  const displayData = data.filter(point => {
+    const pointDate = new Date(point.timestamp);
+    const now = new Date();
+    
+    switch (selectedTimeRange) {
+      case '1h':
+        return now.getTime() - pointDate.getTime() <= 60 * 60 * 1000;
+      case '24h':
+        return now.getTime() - pointDate.getTime() <= 24 * 60 * 60 * 1000;
+      case '7d':
+        return now.getTime() - pointDate.getTime() <= 7 * 24 * 60 * 60 * 1000;
+      case '30d':
+        return now.getTime() - pointDate.getTime() <= 30 * 24 * 60 * 60 * 1000;
+      default:
+        return true;
     }
-  }, [displayData.length, toast]);
+  });
 
   return (
     <div style={{ height: "100%", width: "100%" }}>
       <MapContainer
-        defaultCenter={defaultPosition}
+        center={defaultPosition}
         zoom={13}
         scrollWheelZoom={false}
         style={{ height: "100%", width: "100%" }}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attributionUrl='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         {displayData.map((point, index) => (
           point.latitude && point.longitude ? (
-            <Marker 
-              key={index} 
+            <Marker
+              key={index}
               position={[point.latitude, point.longitude]}
             >
               <Popup>
-                <div className="space-y-2">
-                  <h3 className="font-semibold">GPS Data Point {index + 1}</h3>
-                  <p><strong>Latitude:</strong> {point.latitude.toFixed(6)}</p>
-                  <p><strong>Longitude:</strong> {point.longitude.toFixed(6)}</p>
-                  <p><strong>Altitude:</strong> {point.altitude ? `${point.altitude}m` : 'N/A'}</p>
-                  <p><strong>HDOP:</strong> {point.hdop || 'N/A'}</p>
-                  <p><strong>Temperature:</strong> {point.temperature ? `${point.temperature}°C` : 'N/A'}</p>
-                  <p><strong>pH:</strong> {point.ph || 'N/A'}</p>
-                  <p><strong>Dissolved Solids:</strong> {point.dissolvedsolids || 'N/A'}</p>
-                  <p><strong>Port:</strong> {point.f_port || 'N/A'}</p>
-                  <p><strong>Growth Prediction:</strong> {point.hdop ? `${(point.hdop * 0.1).toFixed(1)}%` : 'N/A'}</p>
-                  <p><strong>Timestamp:</strong> {new Date(point.timestamp).toLocaleString()}</p>
+                <div>
+                  <p>Timestamp: {new Date(point.timestamp).toLocaleString()}</p>
+                  <p>Temperature: {point.temperature}°C</p>
+                  <p>pH: {point.ph}</p>
                 </div>
               </Popup>
             </Marker>
           ) : null
         ))}
-        {currentLocation && displayData.length === 0 && (
-          <Marker position={currentLocation}>
-            <Popup>
-              <div>
-                <h3 className="font-semibold">Current Location</h3>
-                <p><strong>Latitude:</strong> {currentLocation[0].toFixed(6)}</p>
-                <p><strong>Longitude:</strong> {currentLocation[1].toFixed(6)}</p>
-              </div>
-            </Popup>
-          </Marker>
-        )}
       </MapContainer>
     </div>
   );
 };
-
-export default GpsMap;

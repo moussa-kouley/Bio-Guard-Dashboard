@@ -26,7 +26,19 @@ export async function loadModel() {
           sparse: false,
           name: "input_layer_1"
         };
+
+        // Ensure inbound_nodes is an array
+        if (inputLayer.inbound_nodes && !Array.isArray(inputLayer.inbound_nodes)) {
+          inputLayer.inbound_nodes = [];
+        }
       }
+
+      // Fix inbound_nodes format for all layers
+      modelJson.modelTopology.model_config.config.layers.forEach((layer: any) => {
+        if (layer.inbound_nodes && !Array.isArray(layer.inbound_nodes)) {
+          layer.inbound_nodes = [layer.inbound_nodes];
+        }
+      });
     }
 
     const model = await tf.loadLayersModel(
