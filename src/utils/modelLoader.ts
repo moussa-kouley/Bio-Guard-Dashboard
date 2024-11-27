@@ -5,6 +5,9 @@ export async function loadModel() {
     // First ensure TensorFlow.js is properly initialized
     await tf.ready();
     
+    // Add console log to track model loading attempt
+    console.log('Attempting to load model...');
+    
     // Load the model with explicit error handling and correct path for .keras format
     const model = await tf.loadLayersModel('/model/water_hyacinth_modelV2.keras', {
       onProgress: (fraction) => {
@@ -15,6 +18,8 @@ export async function loadModel() {
     if (!model) {
       throw new Error('Model failed to load - model is null');
     }
+
+    console.log('Model loaded successfully');
 
     // Warm up the model with a dummy prediction
     const dummyInput = tf.zeros([1, 256, 256, 2]);
@@ -30,6 +35,10 @@ export async function loadModel() {
     return model;
   } catch (error) {
     console.error('Error loading model:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', error.message);
+      console.error('Error stack:', error.stack);
+    }
     throw new Error(
       error instanceof Error 
         ? `Failed to load the prediction model: ${error.message}`
