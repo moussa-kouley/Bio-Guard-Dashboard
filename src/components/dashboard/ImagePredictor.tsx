@@ -21,32 +21,38 @@ export const ImagePredictor = () => {
     if (!files?.length) return;
 
     setIsLoading(true);
+    const newImages: ProcessedImage[] = [];
 
     try {
-      const newImages: ProcessedImage[] = [];
-
       for (const file of Array.from(files)) {
         try {
-          // Create an image element and wait for it to load
-          const img = new Image();
-          const imageLoadPromise = new Promise<HTMLImageElement>((resolve, reject) => {
-            img.onload = () => resolve(img);
-            img.onerror = () => reject(new Error('Failed to load image'));
-          });
-          img.src = URL.createObjectURL(file);
-
-          // Wait for image to load
-          const loadedImg = await imageLoadPromise;
+          console.log(`Processing image: ${file.name}`);
           
-          // Analyze the image
-          const analysis = await analyzeImage(loadedImg);
+          // Create blob URL
+          const blobUrl = URL.createObjectURL(file);
+          
+          // Create and load image
+          const img = new Image();
+          await new Promise<void>((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = () => reject(new Error(`Failed to load image: ${file.name}`));
+            img.src = blobUrl;
+          });
+          
+          console.log(`Image loaded: ${file.name}`);
+          
+          // Analyze image
+          const analysis = await analyzeImage(img);
+          console.log(`Analysis complete for ${file.name}:`, analysis);
           
           newImages.push({
-            src: img.src,
+            src: blobUrl,
             analysis
           });
+          
+          console.log(`Successfully processed ${file.name}`);
         } catch (error) {
-          console.error('Error processing individual image:', error);
+          console.error(`Error processing ${file.name}:`, error);
           toast({
             title: "Processing Error",
             description: `Failed to process image: ${file.name}`,
