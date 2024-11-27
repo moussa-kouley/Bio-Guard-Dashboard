@@ -18,11 +18,23 @@ async function loadModelOnce() {
       await tf.ready();
       console.log('TensorFlow.js initialized successfully');
       
-      model = await tf.loadLayersModel(modelPath);
+      const modelResponse = await fetch(modelPath);
+      const modelJson = await modelResponse.json();
       
-      // Verify model input shape
-      const inputShape = model.inputs[0].shape;
-      console.log('Model input shape:', inputShape);
+      // Modify input layer configuration
+      if (modelJson.modelTopology?.model_config?.config?.layers) {
+        const inputLayer = modelJson.modelTopology.model_config.config.layers.find(
+          (layer: any) => layer.class_name === "InputLayer"
+        );
+        if (inputLayer) {
+          inputLayer.config.batch_input_shape = [null, 10, 224, 224, 3];
+        }
+      }
+      
+      model = await tf.loadLayersModel(
+        tf.io.fromMemory(modelJson),
+        { strict: true }
+      );
       
       console.log('Model loaded successfully');
     } catch (error) {
@@ -35,13 +47,11 @@ async function loadModelOnce() {
 
 async function preprocessImage(imageElement: HTMLImageElement): Promise<tf.Tensor> {
   return tf.tidy(() => {
-    // Convert the image to a tensor
     let tensor = tf.browser.fromPixels(imageElement)
       .resizeBilinear([224, 224])
       .toFloat()
       .div(255.0);
     
-    // Add batch and time dimensions [1, 10, 224, 224, 3]
     tensor = tensor.expandDims(0).expandDims(0);
     tensor = tf.tile(tensor, [1, 10, 1, 1, 1]);
     
@@ -72,7 +82,7 @@ export async function analyzeImage(imageElement: HTMLImageElement): Promise<Imag
     
     return {
       coverage: prediction * 100,
-      confidence: Math.min(prediction * 150, 100), // Scale confidence
+      confidence: Math.min(prediction * 150, 100),
       timestamp: new Date().toISOString()
     };
   } catch (error) {

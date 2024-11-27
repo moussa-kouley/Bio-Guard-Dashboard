@@ -12,21 +12,32 @@ export async function loadModel() {
 
     const modelJson = await modelJsonResponse.json();
     
-    const weightsManifest = modelJson.weightsManifest;
-    if (!weightsManifest || weightsManifest.length === 0) {
-      throw new Error('No weights manifest found in model.json');
+    // Add input shape configuration to model JSON
+    if (modelJson.modelTopology && 
+        modelJson.modelTopology.model_config && 
+        modelJson.modelTopology.model_config.config && 
+        modelJson.modelTopology.model_config.config.layers) {
+      
+      const inputLayer = modelJson.modelTopology.model_config.config.layers.find(
+        (layer: any) => layer.class_name === "InputLayer"
+      );
+      
+      if (inputLayer) {
+        inputLayer.config.batch_input_shape = [null, 10, 224, 224, 3];
+      }
     }
 
-    const weightFiles = weightsManifest.flatMap(group => group.paths);
-    console.log('Required weight files:', weightFiles);
-
-    const model = await tf.loadLayersModel('/model/model.json');
+    const model = await tf.loadLayersModel(
+      tf.io.fromMemory(modelJson),
+      {
+        strict: true
+      }
+    );
     
-    if (!model) {
-      throw new Error('Model failed to load - model is null');
-    }
+    // Verify input shape
+    const inputShape = model.inputs[0].shape;
+    console.log('Model loaded with input shape:', inputShape);
     
-    console.log('Model loaded successfully');
     return model;
   } catch (error) {
     console.error('Error loading model:', error);
@@ -40,13 +51,17 @@ export async function loadModel() {
 
 export async function preprocessImage(imageData: HTMLImageElement) {
   return tf.tidy(() => {
+    // Convert image to tensor and preprocess
     let tensor = tf.browser.fromPixels(imageData)
       .resizeBilinear([224, 224])
       .toFloat()
       .div(tf.scalar(255));
     
-    tensor = tensor.expandDims(0);
+    // Add batch and time dimensions [1, 10, 224, 224, 3]
+    tensor = tensor.expandDims(0).expandDims(0);
+    tensor = tf.tile(tensor, [1, 10, 1, 1, 1]);
     
+    console.log('Preprocessed tensor shape:', tensor.shape);
     return tensor;
   });
 }
