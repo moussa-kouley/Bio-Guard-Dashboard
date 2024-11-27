@@ -14,10 +14,8 @@ export async function loadModel() {
 export async function preprocessImage(imageData: HTMLImageElement) {
   // Convert the image to a tensor
   const tensor = tf.browser.fromPixels(imageData)
-    // Resize to 256x256
-    .resizeBilinear([256, 256])
-    // Convert to grayscale (2 channels)
-    .slice([0, 0, 0], [-1, -1, 2])
+    // Resize to match training input size (adjust these values based on your model's requirements)
+    .resizeBilinear([224, 224])
     // Normalize pixel values
     .toFloat()
     .div(tf.scalar(255))
