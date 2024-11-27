@@ -15,115 +15,80 @@ async function loadModelOnce() {
       const modelPath = window.location.origin + '/model/model.json';
       console.log('Attempting to load model from:', modelPath);
       
-      // Wait for tf.js to initialize
-      console.log('Initializing TensorFlow.js...');
       await tf.ready();
       console.log('TensorFlow.js initialized successfully');
       
-      // Check if file exists
-      try {
-        const response = await fetch(modelPath);
-        if (!response.ok) {
-          throw new Error(`Model file not found at ${modelPath}. Status: ${response.status}`);
-        }
-        console.log('Model file found at specified path');
-      } catch (fetchError) {
-        console.error('Error fetching model file:', fetchError);
-        throw fetchError;
-      }
+      // Load model with explicit input shape configuration
+      const modelConfig = {
+        batchInputShape: [null, 10, 224, 224, 3]
+      };
       
-      // Load model
-      console.log('Loading model...');
-      model = await tf.loadLayersModel(modelPath);
-      console.log('Model loaded successfully. Model summary:', model);
+      model = await tf.loadLayersModel(modelPath, {
+        strict: true,
+        extraModelConfig: modelConfig
+      });
+      
+      console.log('Model loaded successfully');
       
       // Warm up the model
-      console.log('Warming up model...');
-      const dummyData = tf.zeros([1, 10, 224, 224, 3]);
-      const warmupResult = model.predict(dummyData);
+      const dummyInput = tf.zeros([1, 10, 224, 224, 3]);
+      const warmupResult = model.predict(dummyInput);
       tf.dispose(warmupResult);
-      tf.dispose(dummyData);
+      tf.dispose(dummyInput);
       console.log('Model warmup completed');
-      
     } catch (error) {
-      console.error('Detailed error loading model:', error);
-      throw new Error(`Failed to load model: ${error.message}`);
+      console.error('Error loading model:', error);
+      throw error;
     }
   }
   return model;
 }
 
-async function preprocessImage(imageElement: HTMLImageElement): Promise<tf.Tensor4D> {
+async function preprocessImage(imageElement: HTMLImageElement): Promise<tf.Tensor> {
   return tf.tidy(() => {
-    console.log('Starting image preprocessing');
-    // Convert the image to a tensor
+    // Convert the image to a tensor and preprocess
     const tensor = tf.browser.fromPixels(imageElement)
-      .resizeBilinear([224, 224]) // Resize to model input size
+      .resizeBilinear([224, 224])
       .toFloat()
-      .div(255.0) // Normalize
-      .expandDims(0)
-      .expandDims(0); // Add batch and time dimensions [1, 1, 224, 224, 3]
+      .div(255.0)
+      .expandDims(0);
     
-    // Repeat the frame 10 times to match the model's expected input shape
-    const repeatedTensor = tensor.tile([1, 10, 1, 1, 1]);
-    console.log('Image preprocessing completed. Tensor shape:', repeatedTensor.shape);
+    // Create a sequence of 10 frames by repeating the image
+    const repeatedTensor = tf.tile(tensor, [1, 10, 1, 1, 1]);
+    console.log('Preprocessed tensor shape:', repeatedTensor.shape);
     return repeatedTensor;
   });
 }
 
-async function makePrediction(model: tf.LayersModel, tensor: tf.Tensor4D): Promise<number> {
-  let prediction: tf.Tensor | null = null;
-  
+async function makePrediction(model: tf.LayersModel, tensor: tf.Tensor): Promise<number> {
   try {
-    console.log('Making prediction with tensor shape:', tensor.shape);
-    // Make prediction
-    prediction = model.predict(tensor) as tf.Tensor;
-    console.log('Prediction tensor shape:', prediction.shape);
+    const prediction = model.predict(tensor) as tf.Tensor;
     const data = await prediction.data();
-    console.log('Raw prediction data:', data);
+    tf.dispose(prediction);
     return data[0];
   } catch (error) {
-    console.error('Error in makePrediction:', error);
+    console.error('Error making prediction:', error);
     throw error;
-  } finally {
-    // Clean up prediction tensor
-    if (prediction) {
-      prediction.dispose();
-    }
   }
 }
 
 export async function analyzeImage(imageElement: HTMLImageElement): Promise<ImageAnalysisResult> {
-  let tensor: tf.Tensor4D | null = null;
+  let tensor: tf.Tensor | null = null;
   
   try {
-    // Ensure model is loaded
     const loadedModel = await loadModelOnce();
-    if (!loadedModel) {
-      throw new Error('Model failed to load');
-    }
-    
-    // Preprocess image
     tensor = await preprocessImage(imageElement);
-    console.log('Image preprocessed successfully');
-    
-    // Make prediction
     const prediction = await makePrediction(loadedModel, tensor);
-    console.log('Prediction made successfully:', prediction);
-    
-    // Calculate coverage based on prediction confidence
-    const coverage = prediction * 100;
     
     return {
-      coverage,
+      coverage: prediction * 100,
       confidence: prediction * 100,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     };
   } catch (error) {
-    console.error('Error in analyzeImage:', error);
+    console.error('Error analyzing image:', error);
     throw error;
   } finally {
-    // Clean up tensor
     if (tensor) {
       tensor.dispose();
     }
