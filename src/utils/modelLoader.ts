@@ -5,8 +5,8 @@ export async function loadModel() {
     // First ensure TensorFlow.js is properly initialized
     await tf.ready();
     
-    // Load the model with explicit error handling
-    const model = await tf.loadLayersModel('/model/water_hyacinth_modelV2.json', {
+    // Load the model with explicit error handling and correct path
+    const model = await tf.loadLayersModel('model/water_hyacinth_modelV2.json', {
       onProgress: (fraction) => {
         console.log(`Model loading progress: ${(fraction * 100).toFixed(1)}%`);
       },
@@ -18,7 +18,13 @@ export async function loadModel() {
 
     // Warm up the model with a dummy prediction
     const dummyInput = tf.zeros([1, 256, 256, 2]);
-    await model.predict(dummyInput).dispose();
+    const dummyPrediction = model.predict(dummyInput);
+    
+    if (Array.isArray(dummyPrediction)) {
+      dummyPrediction.forEach(t => t.dispose());
+    } else {
+      dummyPrediction.dispose();
+    }
     dummyInput.dispose();
 
     return model;
@@ -57,7 +63,17 @@ export async function makePrediction(model: tf.LayersModel, imageData: HTMLImage
 
   try {
     tensor = await preprocessImage(imageData);
-    prediction = await model.predict(tensor) as tf.Tensor;
+    const rawPrediction = await model.predict(tensor);
+    
+    if (Array.isArray(rawPrediction)) {
+      // Handle case where model returns multiple tensors
+      prediction = rawPrediction[0];
+      // Dispose other tensors if any
+      rawPrediction.slice(1).forEach(t => t.dispose());
+    } else {
+      prediction = rawPrediction;
+    }
+    
     const predictionData = await prediction.data();
     return predictionData;
   } catch (error) {
