@@ -3,17 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { Upload, X } from "lucide-react";
-import { loadModel, makePrediction } from "@/utils/modelLoader";
+import { analyzeImage, ImageAnalysisResult } from "@/utils/imageProcessing";
+import { ImageAnalyzer } from "../analysis/ImageAnalyzer";
 
-type ImagePrediction = {
-  image: HTMLImageElement;
-  prediction: number[] | null;
-  error?: string;
-  confidence?: number;
-};
+interface ProcessedImage {
+  src: string;
+  analysis: ImageAnalysisResult;
+}
 
 export const ImagePredictor = () => {
-  const [predictions, setPredictions] = useState<ImagePrediction[]>([]);
+  const [processedImages, setProcessedImages] = useState<ProcessedImage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -22,71 +21,43 @@ export const ImagePredictor = () => {
     if (!files?.length) return;
 
     setIsLoading(true);
-    let model;
-    
-    try {
-      model = await loadModel();
-    } catch (error) {
-      setIsLoading(false);
-      toast({
-        title: "Model Loading Error",
-        description: "Failed to load the prediction model. Please try again later.",
-        variant: "destructive",
-      });
-      return;
-    }
 
-    const processImage = async (file: File): Promise<ImagePrediction> => {
+    const processImage = async (file: File): Promise<ProcessedImage | null> => {
       return new Promise((resolve) => {
         const img = new Image();
         img.src = URL.createObjectURL(file);
         
         img.onload = async () => {
           try {
-            const prediction = await makePrediction(model, img);
-            // Calculate confidence score (assuming binary classification)
-            const confidence = prediction[0] * 100;
+            const analysis = await analyzeImage(img);
             resolve({
-              image: img,
-              prediction: Array.from(prediction),
-              confidence
+              src: img.src,
+              analysis
             });
           } catch (error) {
-            resolve({
-              image: img,
-              prediction: null,
-              error: "Failed to process image"
-            });
+            console.error('Error processing image:', error);
+            resolve(null);
           }
         };
 
-        img.onerror = () => {
-          resolve({
-            image: img,
-            prediction: null,
-            error: "Failed to load image"
-          });
-        };
+        img.onerror = () => resolve(null);
       });
     };
 
     try {
-      const newPredictions = await Promise.all(Array.from(files).map(processImage));
-      setPredictions(prev => [...prev, ...newPredictions]);
+      const results = await Promise.all(Array.from(files).map(processImage));
+      const validResults = results.filter((result): result is ProcessedImage => result !== null);
       
-      const successCount = newPredictions.filter(p => !p.error).length;
-      const errorCount = newPredictions.filter(p => p.error).length;
+      setProcessedImages(prev => [...prev, ...validResults]);
       
       toast({
-        title: "Processing Complete",
-        description: `Analyzed ${successCount} image${successCount !== 1 ? 's' : ''}${
-          errorCount > 0 ? `. Failed to process ${errorCount} image${errorCount !== 1 ? 's' : ''}.` : '.'
-        }`,
+        title: "Analysis Complete",
+        description: `Successfully analyzed ${validResults.length} images`,
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "An unexpected error occurred while processing images.",
+        description: "Failed to analyze images",
         variant: "destructive",
       });
     } finally {
@@ -95,13 +66,13 @@ export const ImagePredictor = () => {
   };
 
   const removeImage = (index: number) => {
-    setPredictions(prev => prev.filter((_, i) => i !== index));
+    setProcessedImages(prev => prev.filter((_, i) => i !== index));
   };
 
   return (
     <Card className="p-4">
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Water Hyacinth Detection</h3>
+        <h3 className="text-lg font-semibold">Water Hyacinth Analysis</h3>
         
         <div className="flex items-center gap-4">
           <Button
@@ -123,38 +94,18 @@ export const ImagePredictor = () => {
           {isLoading && <span>Processing...</span>}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {predictions.map((pred, index) => (
-            <div key={index} className="relative space-y-2 border rounded-lg p-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {processedImages.map((img, index) => (
+            <div key={index} className="relative">
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-2 right-2 h-6 w-6"
+                className="absolute top-2 right-2 z-10 h-6 w-6 bg-black/50 hover:bg-black/70"
                 onClick={() => removeImage(index)}
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4 text-white" />
               </Button>
-              <img
-                src={pred.image.src}
-                alt={`Uploaded ${index + 1}`}
-                className="w-full rounded-lg"
-              />
-              {pred.error ? (
-                <div className="text-sm text-red-500">
-                  Error: {pred.error}
-                </div>
-              ) : (
-                <div className="text-sm space-y-1">
-                  <p className="font-medium">
-                    {pred.confidence && pred.confidence > 50 
-                      ? "Water Hyacinth Detected" 
-                      : "No Water Hyacinth Detected"}
-                  </p>
-                  <p className="text-gray-600">
-                    Confidence: {pred.confidence?.toFixed(1)}%
-                  </p>
-                </div>
-              )}
+              <ImageAnalyzer result={img.analysis} imageSrc={img.src} />
             </div>
           ))}
         </div>
