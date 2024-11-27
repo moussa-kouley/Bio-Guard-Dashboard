@@ -5,53 +5,47 @@ export async function loadModel() {
     await tf.ready();
     console.log('Loading model...');
     
+    // Load model from the correct path
     const model = await tf.loadLayersModel('/model/model.json');
-    if (!model) {
-      throw new Error('Model failed to load');
-    }
-
     console.log('Model loaded successfully');
     return model;
   } catch (error) {
     console.error('Error loading model:', error);
-    throw new Error(
-      error instanceof Error 
-        ? `Failed to load model: ${error.message}`
-        : 'Failed to load model'
-    );
+    throw error;
   }
 }
 
 export async function preprocessImage(imageData: HTMLImageElement) {
   return tf.tidy(() => {
     // Convert the image to a tensor
-    const tensor = tf.browser.fromPixels(imageData)
-      // Resize to the model's expected size
-      .resizeBilinear([256, 256])
-      // Normalize pixel values
+    let tensor = tf.browser.fromPixels(imageData)
+      // Resize to match the model's expected size (224x224 is common)
+      .resizeBilinear([224, 224])
+      // Normalize pixel values to [0,1]
       .toFloat()
-      .div(tf.scalar(255))
-      // Add batch dimension
-      .expandDims(0);
+      .div(tf.scalar(255));
+    
+    // Add batch dimension
+    tensor = tensor.expandDims(0);
     
     return tensor;
   });
 }
 
 export async function makePrediction(model: tf.LayersModel, imageData: HTMLImageElement) {
-  let imageTensor = null;
+  let tensor = null;
   try {
-    imageTensor = await preprocessImage(imageData);
-    const prediction = await model.predict(imageTensor) as tf.Tensor;
-    const predictionData = await prediction.data();
+    tensor = await preprocessImage(imageData);
+    const prediction = await model.predict(tensor) as tf.Tensor;
+    const data = await prediction.data();
     prediction.dispose();
-    return predictionData;
+    return data;
   } catch (error) {
     console.error('Error making prediction:', error);
-    throw new Error('Failed to process image');
+    throw error;
   } finally {
-    if (imageTensor) {
-      imageTensor.dispose();
+    if (tensor) {
+      tensor.dispose();
     }
   }
 }
