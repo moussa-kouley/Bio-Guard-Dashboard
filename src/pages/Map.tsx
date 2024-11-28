@@ -13,7 +13,7 @@ const Map = () => {
   const { toast } = useToast();
   const [selectedRegion, setSelectedRegion] = useState("");
   const [selectedSeverity, setSelectedSeverity] = useState("");
-  const [selectedTimeframe, setSelectedTimeframe] = useState("current");
+  const [selectedTimeframe, setSelectedTimeframe] = useState<"current" | "12h" | "1d" | "3d" | "1w">("current");
   const lastValidMeasurements = React.useRef({
     temperature: null as number | null,
     ph: null as number | null,
@@ -40,6 +40,9 @@ const Map = () => {
         } else if (selectedTimeframe === "3d") {
           const threeDaysAgo = new Date(now.getTime() - (3 * 24 * 60 * 60 * 1000));
           query = query.gte('timestamp', threeDaysAgo.toISOString());
+        } else if (selectedTimeframe === "1w") {
+          const oneWeekAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+          query = query.gte('timestamp', oneWeekAgo.toISOString());
         }
 
         const { data, error } = await query;
@@ -74,7 +77,7 @@ const Map = () => {
     }
   }, [gpsData]);
 
-  const handleTimeframeClick = useCallback((timeframe: string) => {
+  const handleTimeframeClick = useCallback((timeframe: "current" | "12h" | "1d" | "3d" | "1w") => {
     setSelectedTimeframe(timeframe);
   }, []);
 
@@ -101,7 +104,7 @@ const Map = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="md:col-span-3 space-y-6">
           <Card className="h-[600px]">
-            <GpsMap data={gpsData} />
+            <GpsMap data={gpsData} timeframe={selectedTimeframe} />
           </Card>
 
           <div className="grid grid-cols-6 gap-4">
@@ -148,6 +151,14 @@ const Map = () => {
               onClick={() => handleTimeframeClick("3d")}
             >
               <span className="font-medium">Prediction 3 days</span>
+            </Card>
+            <Card 
+              className={`p-4 cursor-pointer transition-colors text-center ${
+                selectedTimeframe === "1w" ? "bg-primary text-primary-foreground" : "hover:bg-primary/10"
+              }`}
+              onClick={() => handleTimeframeClick("1w")}
+            >
+              <span className="font-medium">Prediction 1 week</span>
             </Card>
           </div>
         </div>
