@@ -16,6 +16,7 @@ const GpsMap = ({ data }: GpsMapProps) => {
   return (
     <div style={{ height: "100%", width: "100%" }}>
       <MapContainer
+        key="map-container"
         center={defaultPosition}
         zoom={13}
         scrollWheelZoom={false}
@@ -23,29 +24,31 @@ const GpsMap = ({ data }: GpsMapProps) => {
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attributionControl={true}
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
-        {data.map((entry, index) => (
-          <Marker 
-            key={index} 
-            position={[entry.latitude, entry.longitude] as L.LatLngExpression}
-          >
-            <Popup>
-              <div>
-                <h2>Data Point</h2>
-                <p>Latitude: {entry.latitude}</p>
-                <p>Longitude: {entry.longitude}</p>
-                <p>Altitude: {entry.altitude} m</p>
-                <p>HDOP: {entry.hdop}</p>
-                <p>Temperature: {entry.temperature} °C</p>
-                <p>pH: {entry.ph}</p>
-                <p>Dissolved Solids: {entry.dissolvedsolids} mg/L</p>
-                <p>Timestamp: {entry.timestamp}</p>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+        {data && data.length > 0 && data.map((entry, index) => {
+          const position: L.LatLngExpression = [entry.latitude, entry.longitude];
+          return (
+            <Marker 
+              key={`marker-${index}`}
+              position={position}
+            >
+              <Popup>
+                <div>
+                  <h2>Data Point</h2>
+                  <p>Latitude: {entry.latitude}</p>
+                  <p>Longitude: {entry.longitude}</p>
+                  <p>Altitude: {entry.altitude} m</p>
+                  <p>HDOP: {entry.hdop}</p>
+                  <p>Temperature: {entry.temperature} °C</p>
+                  <p>pH: {entry.ph}</p>
+                  <p>Dissolved Solids: {entry.dissolvedsolids} mg/L</p>
+                  <p>Timestamp: {entry.timestamp}</p>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
     </div>
   );
