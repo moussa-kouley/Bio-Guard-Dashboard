@@ -72,19 +72,19 @@ export const getLegendLabels = (timeframe: TimeframeType) => {
     },
     "12h": {
       title: "12-Hour Prediction",
-      levels: ["Sparse Distribution (0-25%)", "Developing Clusters (25-50%)", "Dense Clusters (50-75%)", "Full Coverage (75-100%)"]
+      levels: ["Low (0-25%)", "Medium (25-50%)", "High (50-75%)", "Very High (75-100%)"]
     },
     "1d": {
       title: "24-Hour Prediction",
-      levels: ["Initial Growth (0-25%)", "Active Spread (25-50%)", "Heavy Infestation (50-75%)", "Complete Infestation (75-100%)"]
+      levels: ["Low (0-25%)", "Medium (25-50%)", "High (50-75%)", "Very High (75-100%)"]
     },
     "3d": {
       title: "3-Day Prediction",
-      levels: ["Early Stage (0-25%)", "Intermediate Growth (25-50%)", "Advanced Growth (50-75%)", "Peak Density (75-100%)"]
+      levels: ["Low (0-25%)", "Medium (25-50%)", "High (50-75%)", "Very High (75-100%)"]
     },
     "1w": {
       title: "1-Week Prediction",
-      levels: ["Emerging Pattern (0-25%)", "Established Growth (25-50%)", "Dominant Coverage (50-75%)", "Maximum Density (75-100%)"]
+      levels: ["Low (0-25%)", "Medium (25-50%)", "High (50-75%)", "Very High (75-100%)"]
     }
   };
   return labels[timeframe];
