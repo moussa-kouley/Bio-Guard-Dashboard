@@ -15,14 +15,18 @@ async function fileToGenerativePart(file: File) {
     throw new Error('Invalid file type. Please upload a JPEG, PNG, or WebP image.');
   }
 
-  if (file.size > 5 * 1024 * 1024) { // 5MB limit
+  if (file.size > 5 * 1024 * 1024) {
     throw new Error('File size too large. Please upload an image smaller than 5MB.');
   }
 
   return new Promise<{ inlineData: { data: string; mimeType: string } }>((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => {
-      const base64Data = (reader.result as string).split(',')[1];
+      if (!reader.result || typeof reader.result !== 'string') {
+        reject(new Error('Failed to read image file'));
+        return;
+      }
+      const base64Data = reader.result.split(',')[1];
       resolve({
         inlineData: { data: base64Data, mimeType: file.type },
       });
@@ -36,7 +40,16 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const parseMetric = (text: string, pattern: RegExp): number => {
   const match = text.match(pattern);
-  return match ? Math.min(Math.max(parseFloat(match[1]), 0), 100) : 0;
+  if (!match) {
+    console.warn(`Failed to parse metric with pattern ${pattern}`);
+    return 0;
+  }
+  const value = parseFloat(match[1]);
+  if (isNaN(value)) {
+    console.warn(`Invalid numeric value parsed: ${match[1]}`);
+    return 0;
+  }
+  return Math.min(Math.max(value, 0), 100);
 };
 
 export const analyzeImageWithGemini = async (file: File): Promise<AnalysisResult> => {
@@ -68,20 +81,29 @@ export const analyzeImageWithGemini = async (file: File): Promise<AnalysisResult
         const response = await result.response;
         const text = response.text();
         
-        if (!text) {
+        if (!text || text.trim().length === 0) {
           throw new Error('Empty response from Gemini API');
+        }
+
+        // Validate that we have all required metrics
+        const coverage = parseMetric(text, /Coverage:\s*(\d+(?:\.\d+)?)%/);
+        const growthRate = parseMetric(text, /Growth Rate:\s*(\d+(?:\.\d+)?)%/);
+        const waterQuality = parseMetric(text, /Water Quality Impact:\s*(\d+(?:\.\d+)?)%/);
+
+        if (coverage === 0 && growthRate === 0 && waterQuality === 0) {
+          throw new Error('Failed to extract metrics from the analysis');
         }
         
         return {
-          coverage: parseMetric(text, /Coverage:\s*(\d+(?:\.\d+)?)%/),
-          growth_rate: parseMetric(text, /Growth Rate:\s*(\d+(?:\.\d+)?)%/),
-          water_quality: parseMetric(text, /Water Quality Impact:\s*(\d+(?:\.\d+)?)%/),
+          coverage,
+          growth_rate: growthRate,
+          water_quality: waterQuality,
           raw_analysis: text
         };
       } catch (error) {
         attempts++;
         if (attempts === maxAttempts) {
-          throw new Error(`Failed to analyze image after ${maxAttempts} attempts: ${error.message}`);
+          throw new Error(`Failed to analyze image after ${maxAttempts} attempts: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
         await delay(initialDelay * Math.pow(2, attempts));
       }
