@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { AuthContext } from "../App";
+import { User } from "lucide-react";
 
 const Index = () => {
   const [username, setUsername] = useState("");
@@ -37,6 +38,11 @@ const Index = () => {
       description: "You can only access Map and Education pages",
     });
     navigate("/map");
+  };
+
+  const fillDemoCredentials = () => {
+    setUsername("demo");
+    setPassword("demo");
   };
 
   return (
@@ -94,6 +100,16 @@ const Index = () => {
                 />
               </div>
             </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={fillDemoCredentials}
+              className="w-full h-12 mb-4 flex items-center justify-center gap-2 border-green-500 text-green-500 hover:bg-green-500 hover:text-white"
+            >
+              <User className="w-4 h-4" />
+              Use Demo Credentials
+            </Button>
 
             <div className="flex gap-4">
               <Button 
