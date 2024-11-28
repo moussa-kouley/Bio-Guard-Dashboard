@@ -1,5 +1,30 @@
 import type { TimeframeType } from '@/types/map';
 
+// More precise Hartbeespoort dam polygon coordinates
+const damCoordinates = [
+  [-25.7487, 27.8539], // Southwest corner
+  [-25.7287, 27.8639], // Northwest corner
+  [-25.7387, 27.8939], // Northeast corner
+  [-25.7587, 27.8839], // Southeast corner
+];
+
+// Function to check if a point is inside the dam polygon
+const isPointInPolygon = (point: [number, number], polygon: [number, number][]) => {
+  const x = point[0], y = point[1];
+  let inside = false;
+  
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i][0], yi = polygon[i][1];
+    const xj = polygon[j][0], yj = polygon[j][1];
+    
+    const intersect = ((yi > y) !== (yj > y))
+        && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  
+  return inside;
+};
+
 export const getHeatmapGradient = (timeframe: TimeframeType) => {
   const gradients = {
     current: { 0.2: '#00ff00', 0.4: '#ffff00', 0.6: '#ff9900', 0.8: '#ff0000' },
@@ -12,7 +37,6 @@ export const getHeatmapGradient = (timeframe: TimeframeType) => {
 };
 
 export const generateHeatmapPoints = (timeframe: TimeframeType) => {
-  // Hartbeespoort dam boundaries (approximately)
   const bounds = {
     minLat: -25.7687,
     maxLat: -25.7287,
@@ -24,19 +48,48 @@ export const generateHeatmapPoints = (timeframe: TimeframeType) => {
   let numPoints: number;
   
   switch(timeframe) {
-    case "current": numPoints = 50; break;
-    case "12h": numPoints = 75; break;
-    case "1d": numPoints = 100; break;
-    case "3d": numPoints = 125; break;
-    case "1w": numPoints = 150; break;
+    case "current": numPoints = 100; break;
+    case "12h": numPoints = 150; break;
+    case "1d": numPoints = 200; break;
+    case "3d": numPoints = 250; break;
+    case "1w": numPoints = 300; break;
   }
 
-  for (let i = 0; i < numPoints; i++) {
+  while (points.length < numPoints) {
     const lat = bounds.minLat + Math.random() * (bounds.maxLat - bounds.minLat);
     const lng = bounds.minLng + Math.random() * (bounds.maxLng - bounds.minLng);
-    const intensity = 0.3 + Math.random() * 0.7; // More varied intensity
-    points.push([lat, lng, intensity]);
+    
+    if (isPointInPolygon([lat, lng], damCoordinates)) {
+      const intensity = 0.3 + Math.random() * 0.7;
+      points.push([lat, lng, intensity]);
+    }
   }
   
   return points;
+};
+
+export const getLegendLabels = (timeframe: TimeframeType) => {
+  const labels = {
+    current: {
+      title: "Current Density",
+      levels: ["Low", "Medium", "High", "Very High"]
+    },
+    "12h": {
+      title: "12-Hour Prediction",
+      levels: ["Minimal", "Moderate", "Significant", "Critical"]
+    },
+    "1d": {
+      title: "24-Hour Prediction",
+      levels: ["Sparse", "Growing", "Dense", "Very Dense"]
+    },
+    "3d": {
+      title: "3-Day Prediction",
+      levels: ["Controlled", "Spreading", "Extensive", "Severe"]
+    },
+    "1w": {
+      title: "1-Week Prediction",
+      levels: ["Manageable", "Increasing", "Concerning", "Critical"]
+    }
+  };
+  return labels[timeframe];
 };

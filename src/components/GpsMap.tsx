@@ -8,6 +8,7 @@ import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import MapController from './map/MapController';
 import HeatmapLayer from './map/HeatmapLayer';
+import HeatmapLegend from './map/HeatmapLegend';
 import { generateHeatmapPoints, getHeatmapGradient } from '@/utils/heatmapUtils';
 
 let DefaultIcon = L.icon({
@@ -29,7 +30,7 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
   const defaultPosition: [number, number] = [-25.7487, 27.8739];
 
   return (
-    <div style={{ height: "100%", width: "100%" }}>
+    <div style={{ height: "100%", width: "100%" }} className="relative">
       <MapContainer
         style={{ height: "100%", width: "100%" }}
         center={defaultPosition}
@@ -69,6 +70,7 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
             </Marker>
           );
         })}
+        <HeatmapLegend timeframe={timeframe} />
       </MapContainer>
     </div>
   );
