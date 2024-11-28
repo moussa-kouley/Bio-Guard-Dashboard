@@ -15,11 +15,11 @@ const HeatmapLayer = ({ points, gradient }: HeatmapLayerProps) => {
     if (!map || !points.length) return;
 
     const heatLayer = (L as any).heatLayer(points, {
-      radius: 25,
-      blur: 15,
+      radius: 15, // Reduced radius for smaller points
+      blur: 10,   // Reduced blur for sharper points
       maxZoom: 20,
       gradient,
-      minOpacity: 0.4
+      minOpacity: 0.3
     });
 
     map.addLayer(heatLayer);

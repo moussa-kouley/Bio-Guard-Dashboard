@@ -1,11 +1,13 @@
 import type { TimeframeType } from '@/types/map';
 
-// More precise Hartbeespoort dam polygon coordinates
-const damCoordinates = [
+// Extended coordinates to include Magalies region
+const damCoordinates: [number, number][] = [
   [-25.7487, 27.8539], // Southwest corner
   [-25.7287, 27.8639], // Northwest corner
   [-25.7387, 27.8939], // Northeast corner
   [-25.7587, 27.8839], // Southeast corner
+  [-25.7487, 27.8739], // Magalies point 1
+  [-25.7387, 27.8639]  // Magalies point 2
 ];
 
 // Function to check if a point is inside the dam polygon
@@ -48,11 +50,11 @@ export const generateHeatmapPoints = (timeframe: TimeframeType) => {
   let numPoints: number;
   
   switch(timeframe) {
-    case "current": numPoints = 100; break;
-    case "12h": numPoints = 150; break;
-    case "1d": numPoints = 200; break;
-    case "3d": numPoints = 250; break;
-    case "1w": numPoints = 300; break;
+    case "current": numPoints = 200; break;
+    case "12h": numPoints = 250; break;
+    case "1d": numPoints = 300; break;
+    case "3d": numPoints = 350; break;
+    case "1w": numPoints = 400; break;
   }
 
   while (points.length < numPoints) {
@@ -60,7 +62,7 @@ export const generateHeatmapPoints = (timeframe: TimeframeType) => {
     const lng = bounds.minLng + Math.random() * (bounds.maxLng - bounds.minLng);
     
     if (isPointInPolygon([lat, lng], damCoordinates)) {
-      const intensity = 0.3 + Math.random() * 0.7;
+      const intensity = 0.2 + Math.random() * 0.6; // Reduced intensity range
       points.push([lat, lng, intensity]);
     }
   }
