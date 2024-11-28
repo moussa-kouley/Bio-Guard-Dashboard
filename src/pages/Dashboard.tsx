@@ -28,8 +28,28 @@ interface AnalysisData {
 
 const Dashboard = () => {
   const { toast } = useToast();
-  const [analysisHistory, setAnalysisHistory] = React.useState<AnalysisData[]>([]);
   const [showMap, setShowMap] = React.useState(false);
+
+  // Generate sample data for the last 7 days
+  const generateSampleData = () => {
+    const data = [];
+    const baseDate = new Date();
+    
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(baseDate);
+      date.setDate(date.getDate() - i);
+      
+      data.push({
+        coverage: 4.5 + Math.random() * 2.5, // Random between 4.5-7%
+        growth_rate: 1.0 + Math.random() * 0.5, // Random between 1.0-1.5%
+        water_quality: 90 - (Math.random() * 15), // Random between 75-90%
+        timestamp: date.toISOString()
+      });
+    }
+    return data;
+  };
+
+  const [analysisHistory] = React.useState<AnalysisData[]>(generateSampleData());
 
   // Sample data for local development
   const sampleGpsData: GpsData[] = [
@@ -129,25 +149,41 @@ const Dashboard = () => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
                 dataKey="timestamp" 
-                tickFormatter={(value) => new Date(value).toLocaleTimeString()} 
+                tickFormatter={(value) => new Date(value).toLocaleDateString()} 
               />
-              <YAxis />
+              <YAxis 
+                yAxisId="left"
+                orientation="left"
+                tickFormatter={(value) => `${value.toFixed(1)}%`}
+              />
+              <YAxis 
+                yAxisId="right"
+                orientation="right"
+                tickFormatter={(value) => `${value.toFixed(1)}%`}
+              />
               <Tooltip 
-                labelFormatter={(value) => new Date(value).toLocaleString()}
-                formatter={(value: number) => [`${value.toFixed(1)}%`, 'Coverage']}
+                labelFormatter={(value) => new Date(value).toLocaleDateString()}
+                formatter={(value: number, name: string) => [
+                  `${value.toFixed(1)}%`,
+                  name === 'coverage' ? 'Coverage' : 'Growth Rate'
+                ]}
               />
               <Area 
+                yAxisId="left"
                 type="monotone" 
                 dataKey="coverage" 
                 stroke="#82ca9d" 
                 fill="#82ca9d" 
                 name="Coverage"
+                opacity={0.6}
               />
               <Line 
+                yAxisId="right"
                 type="monotone" 
                 dataKey="growth_rate" 
                 stroke="#8884d8" 
                 name="Growth Rate"
+                strokeWidth={2}
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -160,18 +196,22 @@ const Dashboard = () => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
                 dataKey="timestamp" 
-                tickFormatter={(value) => new Date(value).toLocaleTimeString()} 
+                tickFormatter={(value) => new Date(value).toLocaleDateString()} 
               />
-              <YAxis />
+              <YAxis 
+                domain={[60, 100]}
+                tickFormatter={(value) => `${value}%`}
+              />
               <Tooltip 
-                labelFormatter={(value) => new Date(value).toLocaleString()}
-                formatter={(value: number) => [`${value.toFixed(1)}%`, 'Quality Impact']}
+                labelFormatter={(value) => new Date(value).toLocaleDateString()}
+                formatter={(value: number) => [`${value.toFixed(1)}%`, 'Water Quality']}
               />
               <Line 
                 type="monotone" 
                 dataKey="water_quality" 
-                stroke="#8884d8" 
-                name="Water Quality Impact" 
+                stroke="#2563eb" 
+                strokeWidth={2}
+                name="Water Quality" 
               />
             </LineChart>
           </ResponsiveContainer>
