@@ -11,25 +11,25 @@ export interface AnalysisResult {
   raw_analysis: string;
 }
 
-// Demo data for fallback
+// Updated demo data to match requested metrics
 const demoAnalysisResults: AnalysisResult[] = [
   {
-    coverage: 35.5,
-    growth_rate: 12.3,
-    water_quality: 68.7,
-    raw_analysis: "Detected moderate water hyacinth coverage in the northern section. Growth patterns suggest active proliferation near water inlets."
+    coverage: 6.8,
+    growth_rate: 1.3,
+    water_quality: 1.2,
+    raw_analysis: "Detected moderate water hyacinth coverage at 6.8%. Growth patterns suggest slow proliferation at 1.3% per week. Water quality impact is minimal at 1.2%."
   },
   {
-    coverage: 42.8,
-    growth_rate: 15.6,
-    water_quality: 62.4,
-    raw_analysis: "Significant water hyacinth clusters observed along the shoreline. Dense vegetation affecting water flow patterns."
+    coverage: 7.0,
+    growth_rate: 1.4,
+    water_quality: 1.3,
+    raw_analysis: "Water hyacinth coverage observed at 7.0%. Growth rate trending at 1.4% weekly with minor water quality impact of 1.3%."
   },
   {
-    coverage: 28.9,
-    growth_rate: 9.8,
-    water_quality: 75.2,
-    raw_analysis: "Scattered water hyacinth patches with varying density. Recent control measures showing positive impact on coverage."
+    coverage: 6.5,
+    growth_rate: 1.2,
+    water_quality: 1.1,
+    raw_analysis: "Current water hyacinth coverage at 6.5% with steady growth rate of 1.2% per week. Water quality impact measured at 1.1%."
   }
 ];
 
