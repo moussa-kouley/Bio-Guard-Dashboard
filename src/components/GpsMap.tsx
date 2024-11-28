@@ -24,6 +24,17 @@ interface GpsMapProps {
   timeframe: "current" | "12h" | "1d" | "3d" | "1w";
 }
 
+// Custom component to handle map view updates
+const MapController = ({ center, zoom }: { center: [number, number], zoom: number }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    map.setView(center, zoom);
+  }, [map, center, zoom]);
+  
+  return null;
+};
+
 // Custom component to handle heatmap layer
 const HeatmapLayer = ({ points, gradient }: { points: any[], gradient: any }) => {
   const map = useMap();
@@ -50,7 +61,6 @@ const HeatmapLayer = ({ points, gradient }: { points: any[], gradient: any }) =>
 
 const GpsMap = ({ data, timeframe }: GpsMapProps) => {
   const { toast } = useToast();
-  const [map, setMap] = useState<L.Map | null>(null);
   
   // Hartbeespoort, South Africa coordinates
   const defaultPosition: [number, number] = [-25.7487, 27.8739];
@@ -126,12 +136,6 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
     return points;
   };
 
-  useEffect(() => {
-    if (map) {
-      map.setView(defaultPosition, 13);
-    }
-  }, [map]);
-
   // Get color based on timeframe
   const getHeatmapGradient = () => {
     switch(timeframe) {
@@ -151,12 +155,12 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
   return (
     <div style={{ height: "100%", width: "100%" }}>
       <MapContainer
-        whenReady={setMap}
         style={{ height: "100%", width: "100%" }}
         center={defaultPosition}
         zoom={13}
         scrollWheelZoom={false}
       >
+        <MapController center={defaultPosition} zoom={13} />
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
