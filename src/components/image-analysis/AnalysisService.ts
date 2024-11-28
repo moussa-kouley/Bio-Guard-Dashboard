@@ -57,9 +57,47 @@ const parseMetric = (text: string, pattern: RegExp): number => {
   return Math.min(Math.max(value, 0), 100);
 };
 
+async function retryWithExponentialBackoff<T>(
+  operation: () => Promise<T>,
+  maxAttempts: number = 5,
+  initialDelay: number = 2000
+): Promise<T> {
+  let attempt = 1;
+  let lastError: Error | null = null;
+
+  while (attempt <= maxAttempts) {
+    try {
+      return await operation();
+    } catch (error: any) {
+      lastError = error;
+      
+      // Don't retry on client errors except rate limits
+      if (error?.status && error.status !== 429 && error.status < 500) {
+        throw error;
+      }
+
+      if (attempt === maxAttempts) {
+        break;
+      }
+
+      // Calculate delay with exponential backoff and jitter
+      const backoffDelay = initialDelay * Math.pow(2, attempt - 1);
+      const jitter = Math.random() * 1000;
+      const totalDelay = backoffDelay + jitter;
+
+      console.log(`Attempt ${attempt} failed, retrying in ${Math.round(totalDelay/1000)}s...`);
+      await delay(totalDelay);
+      attempt++;
+    }
+  }
+
+  throw new Error(`Operation failed after ${maxAttempts} attempts. Last error: ${lastError?.message}`);
+}
+
 export const analyzeImageWithGemini = async (file: File): Promise<AnalysisResult> => {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    const imagePart = await fileToGenerativePart(file);
     
     const prompt = `Analyze this image of water hyacinth. Provide detailed information in the following format:
       Coverage: X%
@@ -69,54 +107,32 @@ export const analyzeImageWithGemini = async (file: File): Promise<AnalysisResult
       Then provide a detailed analysis.
       
       Note: Express all metrics as percentages between 0 and 100.`;
-    
-    const imagePart = await fileToGenerativePart(file);
-    
-    let attempts = 0;
-    const maxAttempts = 3;
-    const initialDelay = 1000;
-    
-    while (attempts < maxAttempts) {
-      try {
-        console.log('Attempting API call...', attempts + 1);
-        const result = await model.generateContent([prompt, imagePart]);
-        const response = await result.response;
-        const text = response.text();
-        
-        console.log('API Response:', text);
-        
-        if (!text || text.trim().length === 0) {
-          throw new Error('Empty response from Gemini API');
-        }
 
-        // Validate that we have all required metrics
-        const coverage = parseMetric(text, /Coverage:\s*(\d+(?:\.\d+)?)%/);
-        const growthRate = parseMetric(text, /Growth Rate:\s*(\d+(?:\.\d+)?)%/);
-        const waterQuality = parseMetric(text, /Water Quality Impact:\s*(\d+(?:\.\d+)?)%/);
-
-        console.log('Parsed metrics:', { coverage, growthRate, waterQuality });
-
-        if (coverage === 0 && growthRate === 0 && waterQuality === 0) {
-          throw new Error('Failed to extract metrics from the analysis');
-        }
-        
-        return {
-          coverage,
-          growth_rate: growthRate,
-          water_quality: waterQuality,
-          raw_analysis: text
-        };
-      } catch (error) {
-        console.error('API call attempt failed:', error);
-        attempts++;
-        if (attempts === maxAttempts) {
-          throw new Error(`Failed to analyze image after ${maxAttempts} attempts: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
-        await delay(initialDelay * Math.pow(2, attempts));
+    const result = await retryWithExponentialBackoff(async () => {
+      const response = await model.generateContent([prompt, imagePart]);
+      const text = response.response.text();
+      
+      if (!text || text.trim().length === 0) {
+        throw new Error('Empty response from Gemini API');
       }
-    }
-    
-    throw new Error('Failed to analyze image after maximum attempts');
+
+      const coverage = parseMetric(text, /Coverage:\s*(\d+(?:\.\d+)?)%/);
+      const growthRate = parseMetric(text, /Growth Rate:\s*(\d+(?:\.\d+)?)%/);
+      const waterQuality = parseMetric(text, /Water Quality Impact:\s*(\d+(?:\.\d+)?)%/);
+
+      if (coverage === 0 && growthRate === 0 && waterQuality === 0) {
+        throw new Error('Failed to extract metrics from the analysis');
+      }
+
+      return {
+        coverage,
+        growth_rate: growthRate,
+        water_quality: waterQuality,
+        raw_analysis: text
+      };
+    });
+
+    return result;
   } catch (error) {
     console.error('Analysis error:', error);
     if (error instanceof Error) {
