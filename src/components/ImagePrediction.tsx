@@ -45,14 +45,37 @@ const ImagePrediction = () => {
     setIsLoading(true);
 
     try {
-      // Analyze all images and calculate average metrics
-      const predictions = await Promise.all(selectedFiles.map(file => analyzeImageWithGemini(file)));
-      
+      const predictions = await Promise.all(
+        selectedFiles.map(async (file) => {
+          try {
+            return await analyzeImageWithGemini(file);
+          } catch (error) {
+            toast({
+              title: `Error analyzing ${file.name}`,
+              description: error instanceof Error ? error.message : 'Unknown error occurred',
+              variant: "destructive",
+            });
+            return null;
+          }
+        })
+      );
+
+      const validPredictions = predictions.filter((p): p is AnalysisResult => p !== null);
+
+      if (validPredictions.length === 0) {
+        toast({
+          title: "Analysis Failed",
+          description: "No images could be analyzed successfully",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const averagePrediction: AnalysisResult = {
-        coverage: predictions.reduce((sum, p) => sum + p.coverage, 0) / predictions.length,
-        growth_rate: predictions.reduce((sum, p) => sum + p.growth_rate, 0) / predictions.length,
-        water_quality: predictions.reduce((sum, p) => sum + p.water_quality, 0) / predictions.length,
-        raw_analysis: `Combined analysis of ${predictions.length} images: ${predictions.map(p => p.raw_analysis).join(' ')}`,
+        coverage: validPredictions.reduce((sum, p) => sum + p.coverage, 0) / validPredictions.length,
+        growth_rate: validPredictions.reduce((sum, p) => sum + p.growth_rate, 0) / validPredictions.length,
+        water_quality: validPredictions.reduce((sum, p) => sum + p.water_quality, 0) / validPredictions.length,
+        raw_analysis: `Combined analysis of ${validPredictions.length} images: ${validPredictions.map(p => p.raw_analysis).join(' ')}`,
       };
 
       await saveAnalysisToDatabase(averagePrediction);
@@ -60,7 +83,7 @@ const ImagePrediction = () => {
 
       toast({
         title: "Analysis Complete",
-        description: `Analyzed ${selectedFiles.length} images. Average Coverage: ${averagePrediction.coverage.toFixed(1)}%, Growth Rate: ${averagePrediction.growth_rate.toFixed(1)}%`,
+        description: `Successfully analyzed ${validPredictions.length} out of ${selectedFiles.length} images. Average Coverage: ${averagePrediction.coverage.toFixed(1)}%, Growth Rate: ${averagePrediction.growth_rate.toFixed(1)}%`,
       });
 
       setSelectedFiles([]);
@@ -68,7 +91,7 @@ const ImagePrediction = () => {
       console.error('Error:', error);
       toast({
         title: "Analysis Failed",
-        description: "Error analyzing images",
+        description: error instanceof Error ? error.message : "Error analyzing images",
         variant: "destructive",
       });
     } finally {
