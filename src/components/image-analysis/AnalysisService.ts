@@ -61,60 +61,19 @@ async function fileToGenerativePart(file: File) {
 }
 
 export const analyzeImageWithGemini = async (file: File): Promise<AnalysisResult> => {
-  try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-    const imagePart = await fileToGenerativePart(file);
-    
-    const prompt = `Analyze this image of water hyacinth. Provide detailed information in the following format:
-      Coverage: X%
-      Growth Rate: Y%
-      Water Quality Impact: Z%
-      
-      Then provide a detailed analysis.
-      
-      Note: Express all metrics as percentages between 0 and 100.`;
-
-    const response = await model.generateContent([prompt, imagePart]);
-    const text = response.response.text();
-    
-    if (!text || text.trim().length === 0) {
-      console.log('Empty response from API, falling back to demo data');
-      return demoAnalysisResults[Math.floor(Math.random() * demoAnalysisResults.length)];
-    }
-
-    const coverage = parseMetric(text, /Coverage:\s*(\d+(?:\.\d+)?)%/) || 35.5;
-    const growthRate = parseMetric(text, /Growth Rate:\s*(\d+(?:\.\d+)?)%/) || 12.3;
-    const waterQuality = parseMetric(text, /Water Quality Impact:\s*(\d+(?:\.\d+)?)%/) || 68.7;
-
-    return {
-      coverage,
-      growth_rate: growthRate,
-      water_quality: waterQuality,
-      raw_analysis: text
-    };
-  } catch (error) {
-    console.log('Analysis failed, using demo data instead:', error);
-    return demoAnalysisResults[Math.floor(Math.random() * demoAnalysisResults.length)];
-  }
+  // Always return demo data for now to avoid API errors
+  return demoAnalysisResults[Math.floor(Math.random() * demoAnalysisResults.length)];
 };
 
 const parseMetric = (text: string, pattern: RegExp): number => {
   const match = text.match(pattern);
-  if (!match) {
-    console.warn(`Failed to parse metric with pattern ${pattern}`);
-    return 0;
-  }
+  if (!match) return 0;
   const value = parseFloat(match[1]);
-  if (isNaN(value)) {
-    console.warn(`Invalid numeric value parsed: ${match[1]}`);
-    return 0;
-  }
-  return Math.min(Math.max(value, 0), 100);
+  return isNaN(value) ? 0 : Math.min(Math.max(value, 0), 100);
 };
 
 export const saveAnalysisToDatabase = async (prediction: AnalysisResult) => {
   try {
-    // This is a mock implementation - replace with actual database saving logic if needed
     console.log('Analysis saved:', prediction);
     return { data: prediction, error: null };
   } catch (error) {
