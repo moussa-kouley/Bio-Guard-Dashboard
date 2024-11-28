@@ -57,11 +57,11 @@ export const generateHeatmapPoints = (timeframe: TimeframeType) => {
     case "1w": numPoints = 200; break;
   }
 
-  // Generate points around each defined region
+  // Generate points around defined regions (60% of points)
+  const pointsPerRegion = Math.floor((numPoints * 0.6) / Object.keys(regions).length);
   Object.values(regions).forEach(region => {
-    const pointsPerRegion = Math.floor(numPoints / 4); // Divide points equally among regions
     for (let i = 0; i < pointsPerRegion; i++) {
-      const offset = 0.004; // Slightly larger offset for more spread
+      const offset = 0.004;
       const lat = region.lat + (Math.random() - 0.5) * offset;
       const lng = region.lng + (Math.random() - 0.5) * offset;
       
@@ -71,6 +71,18 @@ export const generateHeatmapPoints = (timeframe: TimeframeType) => {
       }
     }
   });
+
+  // Generate random points across the lake (40% of points)
+  const remainingPoints = numPoints - points.length;
+  while (points.length < numPoints) {
+    const lat = bounds.minLat + Math.random() * (bounds.maxLat - bounds.minLat);
+    const lng = bounds.minLng + Math.random() * (bounds.maxLng - bounds.minLng);
+    
+    if (isPointInPolygon([lat, lng], damCoordinates)) {
+      const intensity = 0.2 + Math.random() * 0.6;
+      points.push([lat, lng, intensity]);
+    }
+  }
 
   return points;
 };
