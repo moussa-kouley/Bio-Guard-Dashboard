@@ -8,6 +8,7 @@ import { analyzeImageWithGemini, saveAnalysisToDatabase, type AnalysisResult } f
 const ImagePrediction = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [analysisStage, setAnalysisStage] = useState<string>('');
   const { toast } = useToast();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,6 +33,20 @@ const ImagePrediction = () => {
     window.dispatchEvent(event);
   };
 
+  const simulateAnalysisStages = async () => {
+    const stages = [
+      { message: "Processing images...", duration: 1500 },
+      { message: "Analyzing water hyacinth patterns...", duration: 2000 },
+      { message: "Calculating coverage metrics...", duration: 1800 },
+      { message: "Generating environmental impact assessment...", duration: 1700 }
+    ];
+
+    for (const stage of stages) {
+      setAnalysisStage(stage.message);
+      await new Promise(resolve => setTimeout(resolve, stage.duration));
+    }
+  };
+
   const handleUpload = async () => {
     if (!selectedFiles.length) {
       toast({
@@ -43,8 +58,11 @@ const ImagePrediction = () => {
     }
 
     setIsLoading(true);
+    setAnalysisStage("Initializing analysis...");
 
     try {
+      await simulateAnalysisStages();
+
       const predictions = await Promise.all(
         selectedFiles.map(async (file) => {
           try {
@@ -96,6 +114,7 @@ const ImagePrediction = () => {
       });
     } finally {
       setIsLoading(false);
+      setAnalysisStage('');
     }
   };
 
@@ -113,7 +132,7 @@ const ImagePrediction = () => {
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Analyzing {selectedFiles.length} images...
+            {analysisStage}
           </>
         ) : (
           "Analyze Images"
