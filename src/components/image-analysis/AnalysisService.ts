@@ -59,7 +59,7 @@ const parseMetric = (text: string, pattern: RegExp): number => {
 
 export const analyzeImageWithGemini = async (file: File): Promise<AnalysisResult> => {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-vision" });
     
     const prompt = `Analyze this image of water hyacinth. Provide detailed information in the following format:
       Coverage: X%
