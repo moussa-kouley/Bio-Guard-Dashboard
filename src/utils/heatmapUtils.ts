@@ -10,7 +10,14 @@ const damCoordinates: [number, number][] = [
   [-25.7387, 27.8639]  // Magalies point 2
 ];
 
-// Function to check if a point is inside the dam polygon
+// Define specific regions for cluster centers
+const regions = {
+  middle: { lat: -25.7437, lng: 27.8739 },
+  north: { lat: -25.7337, lng: 27.8739 },
+  south: { lat: -25.7537, lng: 27.8739 },
+  east: { lat: -25.7437, lng: 27.8839 }
+};
+
 const isPointInPolygon = (point: [number, number], polygon: [number, number][]) => {
   const x = point[0], y = point[1];
   let inside = false;
@@ -42,7 +49,6 @@ export const generateHeatmapPoints = (timeframe: TimeframeType) => {
   const points: [number, number, number][] = [];
   let numPoints: number;
   
-  // Generate different number of points based on timeframe
   switch(timeframe) {
     case "current": numPoints = 100; break;
     case "12h": numPoints = 120; break;
@@ -51,42 +57,21 @@ export const generateHeatmapPoints = (timeframe: TimeframeType) => {
     case "1w": numPoints = 200; break;
   }
 
-  // Create clusters of points
-  const numClusters = Math.floor(numPoints / 20); // Create clusters of ~20 points
-  const clusters: { lat: number; lng: number }[] = [];
-
-  // Generate random cluster centers
-  for (let i = 0; i < numClusters; i++) {
-    let clusterCenter;
-    let attempts = 0;
-    do {
-      const lat = bounds.minLat + Math.random() * (bounds.maxLat - bounds.minLat);
-      const lng = bounds.minLng + Math.random() * (bounds.maxLng - bounds.minLng);
-      clusterCenter = { lat, lng };
-      attempts++;
-    } while (!isPointInPolygon([clusterCenter.lat, clusterCenter.lng], damCoordinates) && attempts < 50);
-
-    if (attempts < 50) {
-      clusters.push(clusterCenter);
+  // Generate points around each defined region
+  Object.values(regions).forEach(region => {
+    const pointsPerRegion = Math.floor(numPoints / 4); // Divide points equally among regions
+    for (let i = 0; i < pointsPerRegion; i++) {
+      const offset = 0.004; // Slightly larger offset for more spread
+      const lat = region.lat + (Math.random() - 0.5) * offset;
+      const lng = region.lng + (Math.random() - 0.5) * offset;
+      
+      if (isPointInPolygon([lat, lng], damCoordinates)) {
+        const intensity = 0.2 + Math.random() * 0.6;
+        points.push([lat, lng, intensity]);
+      }
     }
-  }
+  });
 
-  // Generate points around clusters
-  while (points.length < numPoints) {
-    const randomCluster = clusters[Math.floor(Math.random() * clusters.length)];
-    if (!randomCluster) continue;
-
-    // Generate point with random offset from cluster center
-    const offset = 0.003; // Adjust this value to control cluster size
-    const lat = randomCluster.lat + (Math.random() - 0.5) * offset;
-    const lng = randomCluster.lng + (Math.random() - 0.5) * offset;
-    
-    if (isPointInPolygon([lat, lng], damCoordinates)) {
-      const intensity = 0.2 + Math.random() * 0.6;
-      points.push([lat, lng, intensity]);
-    }
-  }
-  
   return points;
 };
 
