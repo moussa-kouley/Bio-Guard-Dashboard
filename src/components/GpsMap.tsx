@@ -3,6 +3,20 @@ import { useToast } from "@/components/ui/use-toast";
 import type { GpsData } from '@/types/gps';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { useEffect, useState } from 'react';
+
+// Fix for default marker icon
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+let DefaultIcon = L.icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41]
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
 
 interface GpsMapProps {
   data: GpsData[];
@@ -10,24 +24,32 @@ interface GpsMapProps {
 
 const GpsMap = ({ data }: GpsMapProps) => {
   const { toast } = useToast();
+  const [map, setMap] = useState<L.Map | null>(null);
+  
   // Hartbeespoort, South Africa coordinates
-  const defaultPosition: L.LatLngExpression = [-25.7487, 27.8739];
+  const defaultPosition: [number, number] = [-25.7487, 27.8739];
+
+  useEffect(() => {
+    if (map) {
+      map.setView(defaultPosition, 13);
+    }
+  }, [map]);
 
   return (
     <div style={{ height: "100%", width: "100%" }}>
       <MapContainer
-        key="map-container"
-        center={defaultPosition}
+        ref={setMap}
+        style={{ height: "100%", width: "100%" }}
         zoom={13}
         scrollWheelZoom={false}
-        style={{ height: "100%", width: "100%" }}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         {data && data.length > 0 && data.map((entry, index) => {
-          const position: L.LatLngExpression = [entry.latitude, entry.longitude];
+          if (!entry.latitude || !entry.longitude) return null;
+          const position: [number, number] = [entry.latitude, entry.longitude];
           return (
             <Marker 
               key={`marker-${index}`}
