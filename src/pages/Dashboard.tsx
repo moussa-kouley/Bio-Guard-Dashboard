@@ -14,6 +14,7 @@ import { Card } from "@/components/ui/card";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { MetricCards } from "@/components/dashboard/MetricCards";
 import ImagePrediction from "@/components/ImagePrediction";
+import GpsMap from "@/components/GpsMap";
 import { useQuery } from '@tanstack/react-query';
 import type { GpsData } from "@/types/gps";
 import * as React from 'react';
@@ -28,31 +29,32 @@ interface AnalysisData {
 const Dashboard = () => {
   const { toast } = useToast();
   const [analysisHistory, setAnalysisHistory] = React.useState<AnalysisData[]>([]);
+  const [showMap, setShowMap] = React.useState(false);
 
   // Sample data for local development
   const sampleGpsData: GpsData[] = [
-  {
-    latitude: -25.7487,
-    longitude: 27.8739,
-    altitude: 100,
-    hdop: 25,
-    temperature: 25,
-    ph: 7.0,
-    dissolvedsolids: 450,
-    timestamp: new Date().toISOString(),
-    f_port: 1
-  },
-  {
-    latitude: -25.7490,
-    longitude: 27.8742,
-    altitude: 102,
-    hdop: 26,
-    temperature: 26,
-    ph: 7.2,
-    dissolvedsolids: 455,
-    timestamp: new Date(Date.now() - 3600000).toISOString(),
-    f_port: 1
-  }
+    {
+      latitude: -25.7487,
+      longitude: 27.8739,
+      altitude: 100,
+      hdop: 25,
+      temperature: 25,
+      ph: 7.0,
+      dissolvedsolids: 450,
+      timestamp: new Date().toISOString(),
+      f_port: 1
+    },
+    {
+      latitude: -25.7490,
+      longitude: 27.8742,
+      altitude: 102,
+      hdop: 26,
+      temperature: 26,
+      ph: 7.2,
+      dissolvedsolids: 455,
+      timestamp: new Date(Date.now() - 3600000).toISOString(),
+      f_port: 1
+    }
   ];
 
   // Simulated data fetching with React Query
@@ -83,13 +85,20 @@ const Dashboard = () => {
         water_quality,
         timestamp: event.detail.timestamp
       }]);
+      
+      setShowMap(true); // Show map after analysis
+      
+      toast({
+        title: "Analysis Complete",
+        description: "Map view has been updated with the latest analysis.",
+      });
     };
 
     window.addEventListener('newAnalysis', handleNewAnalysis as EventListener);
     return () => {
       window.removeEventListener('newAnalysis', handleNewAnalysis as EventListener);
     };
-  }, []);
+  }, [toast]);
 
   return (
     <div className="p-6">
@@ -102,6 +111,15 @@ const Dashboard = () => {
           <ImagePrediction />
         </div>
       </div>
+
+      {showMap && (
+        <Card className="mb-6 p-4">
+          <h2 className="text-lg font-semibold mb-4">Hartbeespoort Dam Coverage Map</h2>
+          <div className="h-[400px] w-full">
+            <GpsMap data={gpsData} timeframe="current" />
+          </div>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <Card className="p-4">
