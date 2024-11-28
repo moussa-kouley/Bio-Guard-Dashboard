@@ -20,8 +20,8 @@ async function fileToGenerativePart(file: File) {
     throw new Error('Invalid file type. Please upload a JPEG, PNG, or WebP image.');
   }
 
-  if (file.size > 5 * 1024 * 1024) {
-    throw new Error('File size too large. Please upload an image smaller than 5MB.');
+  if (file.size > 4 * 1024 * 1024) { // Reduced to 4MB to help prevent server errors
+    throw new Error('File size too large. Please upload an image smaller than 4MB.');
   }
 
   return new Promise<{ inlineData: { data: string; mimeType: string } }>((resolve, reject) => {
@@ -57,63 +57,39 @@ const parseMetric = (text: string, pattern: RegExp): number => {
   return Math.min(Math.max(value, 0), 100);
 };
 
-interface RetryOptions {
-  maxAttempts: number;
-  initialDelay: number;
-  maxDelay: number;
-  retryableStatuses: number[];
-}
-
 async function retryWithExponentialBackoff<T>(
   operation: () => Promise<T>,
-  options: RetryOptions = {
-    maxAttempts: 8,
-    initialDelay: 2000,
-    maxDelay: 32000,
-    retryableStatuses: [429, 500, 502, 503, 504]
-  }
+  maxAttempts: number = 5,
+  initialDelay: number = 1000
 ): Promise<T> {
   let attempt = 1;
-  let lastError: Error | null = null;
+  let delay = initialDelay;
 
-  while (attempt <= options.maxAttempts) {
+  while (attempt <= maxAttempts) {
     try {
       return await operation();
     } catch (error: any) {
-      lastError = error;
-      const status = error?.status || (error?.response?.status);
-      
-      // Only retry on specified status codes
-      if (!options.retryableStatuses.includes(status)) {
-        throw error;
+      if (attempt === maxAttempts) {
+        throw new Error(`Operation failed after ${maxAttempts} attempts. Last error: ${error.message}`);
       }
 
-      if (attempt === options.maxAttempts) {
-        break;
+      const status = error?.status || error?.response?.status;
+      
+      // For rate limit errors (429), wait longer
+      if (status === 429) {
+        delay = Math.min(delay * 4, 60000); // Max 1 minute delay for rate limits
+      } else {
+        delay = Math.min(delay * 2, 30000); // Max 30 seconds delay for other errors
       }
 
-      // Calculate delay with exponential backoff and jitter
-      const backoffDelay = Math.min(
-        options.initialDelay * Math.pow(2, attempt - 1),
-        options.maxDelay
-      );
-      const jitter = Math.random() * (backoffDelay * 0.1); // 10% jitter
-      const totalDelay = backoffDelay + jitter;
-
-      console.log(
-        `Attempt ${attempt}/${options.maxAttempts} failed (${status}), ` +
-        `retrying in ${Math.round(totalDelay/1000)}s...`
-      );
+      console.log(`Attempt ${attempt}/${maxAttempts} failed (${status}), retrying in ${delay/1000}s...`);
       
-      await delay(totalDelay);
+      await new Promise(resolve => setTimeout(resolve, delay));
       attempt++;
     }
   }
 
-  throw new Error(
-    `Operation failed after ${options.maxAttempts} attempts. ` +
-    `Last error: ${lastError?.message || 'Unknown error'}`
-  );
+  throw new Error('Maximum retry attempts reached');
 }
 
 export const analyzeImageWithGemini = async (file: File): Promise<AnalysisResult> => {
@@ -130,37 +106,29 @@ export const analyzeImageWithGemini = async (file: File): Promise<AnalysisResult
       
       Note: Express all metrics as percentages between 0 and 100.`;
 
-    const result = await retryWithExponentialBackoff(
-      async () => {
-        const response = await model.generateContent([prompt, imagePart]);
-        const text = response.response.text();
-        
-        if (!text || text.trim().length === 0) {
-          throw new Error('Empty response from Gemini API');
-        }
-
-        const coverage = parseMetric(text, /Coverage:\s*(\d+(?:\.\d+)?)%/);
-        const growthRate = parseMetric(text, /Growth Rate:\s*(\d+(?:\.\d+)?)%/);
-        const waterQuality = parseMetric(text, /Water Quality Impact:\s*(\d+(?:\.\d+)?)%/);
-
-        if (coverage === 0 && growthRate === 0 && waterQuality === 0) {
-          throw new Error('Failed to extract metrics from the analysis');
-        }
-
-        return {
-          coverage,
-          growth_rate: growthRate,
-          water_quality: waterQuality,
-          raw_analysis: text
-        };
-      },
-      {
-        maxAttempts: 8,
-        initialDelay: 2000,
-        maxDelay: 32000,
-        retryableStatuses: [429, 500, 502, 503, 504]
+    const result = await retryWithExponentialBackoff(async () => {
+      const response = await model.generateContent([prompt, imagePart]);
+      const text = response.response.text();
+      
+      if (!text || text.trim().length === 0) {
+        throw new Error('Empty response from Gemini API');
       }
-    );
+
+      const coverage = parseMetric(text, /Coverage:\s*(\d+(?:\.\d+)?)%/);
+      const growthRate = parseMetric(text, /Growth Rate:\s*(\d+(?:\.\d+)?)%/);
+      const waterQuality = parseMetric(text, /Water Quality Impact:\s*(\d+(?:\.\d+)?)%/);
+
+      if (coverage === 0 && growthRate === 0 && waterQuality === 0) {
+        throw new Error('Failed to extract metrics from the analysis');
+      }
+
+      return {
+        coverage,
+        growth_rate: growthRate,
+        water_quality: waterQuality,
+        raw_analysis: text
+      };
+    });
 
     return result;
   } catch (error) {
