@@ -55,36 +55,75 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
   // Hartbeespoort, South Africa coordinates
   const defaultPosition: [number, number] = [-25.7487, 27.8739];
 
-  // Generate heatmap points based on timeframe
+  // Generate simulated heatmap points based on timeframe
   const getHeatmapPoints = () => {
-    if (!data || data.length === 0) return [];
+    // Generate points around Hartbeespoort dam
+    const centerLat = -25.7487;
+    const centerLng = 27.8739;
+    const points: [number, number, number][] = [];
     
-    return data.map(entry => {
-      if (!entry.latitude || !entry.longitude) return null;
+    // Number of points to generate based on timeframe
+    let numPoints = 50;
+    let spread = 0.02; // Base spread in degrees
+    
+    switch(timeframe) {
+      case "current":
+        numPoints = 30;
+        spread = 0.01;
+        break;
+      case "12h":
+        numPoints = 40;
+        spread = 0.015;
+        break;
+      case "1d":
+        numPoints = 50;
+        spread = 0.02;
+        break;
+      case "3d":
+        numPoints = 60;
+        spread = 0.025;
+        break;
+      case "1w":
+        numPoints = 70;
+        spread = 0.03;
+        break;
+    }
+    
+    // Generate random points around the center
+    for (let i = 0; i < numPoints; i++) {
+      const lat = centerLat + (Math.random() - 0.5) * spread;
+      const lng = centerLng + (Math.random() - 0.5) * spread;
       
-      // Adjust intensity based on timeframe prediction
-      let intensity = 0.5; // default intensity
+      // Adjust intensity based on timeframe and distance from center
+      let intensity = 0.5;
+      const distance = Math.sqrt(
+        Math.pow(lat - centerLat, 2) + Math.pow(lng - centerLng, 2)
+      );
       
       switch(timeframe) {
         case "current":
-          intensity = 1.0;
+          intensity = 1.0 - distance * 20;
           break;
         case "12h":
-          intensity = 0.8;
+          intensity = 0.8 - distance * 15;
           break;
         case "1d":
-          intensity = 0.6;
+          intensity = 0.6 - distance * 10;
           break;
         case "3d":
-          intensity = 0.4;
+          intensity = 0.4 - distance * 8;
           break;
         case "1w":
-          intensity = 0.2;
+          intensity = 0.2 - distance * 5;
           break;
       }
       
-      return [entry.latitude, entry.longitude, intensity];
-    }).filter(point => point !== null) as [number, number, number][];
+      // Ensure intensity is within bounds
+      intensity = Math.max(0.1, Math.min(1, intensity));
+      points.push([lat, lng, intensity]);
+    }
+    
+    return points;
   };
 
   useEffect(() => {
@@ -112,7 +151,7 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
   return (
     <div style={{ height: "100%", width: "100%" }}>
       <MapContainer
-        whenCreated={setMap}
+        whenReady={setMap}
         style={{ height: "100%", width: "100%" }}
         center={defaultPosition}
         zoom={13}
