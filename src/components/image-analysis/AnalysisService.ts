@@ -57,41 +57,63 @@ const parseMetric = (text: string, pattern: RegExp): number => {
   return Math.min(Math.max(value, 0), 100);
 };
 
+interface RetryOptions {
+  maxAttempts: number;
+  initialDelay: number;
+  maxDelay: number;
+  retryableStatuses: number[];
+}
+
 async function retryWithExponentialBackoff<T>(
   operation: () => Promise<T>,
-  maxAttempts: number = 5,
-  initialDelay: number = 2000
+  options: RetryOptions = {
+    maxAttempts: 8,
+    initialDelay: 2000,
+    maxDelay: 32000,
+    retryableStatuses: [429, 500, 502, 503, 504]
+  }
 ): Promise<T> {
   let attempt = 1;
   let lastError: Error | null = null;
 
-  while (attempt <= maxAttempts) {
+  while (attempt <= options.maxAttempts) {
     try {
       return await operation();
     } catch (error: any) {
       lastError = error;
+      const status = error?.status || (error?.response?.status);
       
-      // Don't retry on client errors except rate limits
-      if (error?.status && error.status !== 429 && error.status < 500) {
+      // Only retry on specified status codes
+      if (!options.retryableStatuses.includes(status)) {
         throw error;
       }
 
-      if (attempt === maxAttempts) {
+      if (attempt === options.maxAttempts) {
         break;
       }
 
       // Calculate delay with exponential backoff and jitter
-      const backoffDelay = initialDelay * Math.pow(2, attempt - 1);
-      const jitter = Math.random() * 1000;
+      const backoffDelay = Math.min(
+        options.initialDelay * Math.pow(2, attempt - 1),
+        options.maxDelay
+      );
+      const jitter = Math.random() * (backoffDelay * 0.1); // 10% jitter
       const totalDelay = backoffDelay + jitter;
 
-      console.log(`Attempt ${attempt} failed, retrying in ${Math.round(totalDelay/1000)}s...`);
+      console.log(
+        `Attempt ${attempt}/${options.maxAttempts} failed (${status}), ` +
+        `retrying in ${Math.round(totalDelay/1000)}s...`
+      );
+      
       await delay(totalDelay);
       attempt++;
     }
   }
 
-  throw new Error(`Operation failed after ${maxAttempts} attempts. Last error: ${lastError?.message}`);
+  throw new Error(
+    `Operation failed after ${options.maxAttempts} attempts. ` +
+    `Last error: ${lastError?.message || 'Unknown error'}`
+  );
 }
 
 export const analyzeImageWithGemini = async (file: File): Promise<AnalysisResult> => {
@@ -108,29 +130,37 @@ export const analyzeImageWithGemini = async (file: File): Promise<AnalysisResult
       
       Note: Express all metrics as percentages between 0 and 100.`;
 
-    const result = await retryWithExponentialBackoff(async () => {
-      const response = await model.generateContent([prompt, imagePart]);
-      const text = response.response.text();
-      
-      if (!text || text.trim().length === 0) {
-        throw new Error('Empty response from Gemini API');
+    const result = await retryWithExponentialBackoff(
+      async () => {
+        const response = await model.generateContent([prompt, imagePart]);
+        const text = response.response.text();
+        
+        if (!text || text.trim().length === 0) {
+          throw new Error('Empty response from Gemini API');
+        }
+
+        const coverage = parseMetric(text, /Coverage:\s*(\d+(?:\.\d+)?)%/);
+        const growthRate = parseMetric(text, /Growth Rate:\s*(\d+(?:\.\d+)?)%/);
+        const waterQuality = parseMetric(text, /Water Quality Impact:\s*(\d+(?:\.\d+)?)%/);
+
+        if (coverage === 0 && growthRate === 0 && waterQuality === 0) {
+          throw new Error('Failed to extract metrics from the analysis');
+        }
+
+        return {
+          coverage,
+          growth_rate: growthRate,
+          water_quality: waterQuality,
+          raw_analysis: text
+        };
+      },
+      {
+        maxAttempts: 8,
+        initialDelay: 2000,
+        maxDelay: 32000,
+        retryableStatuses: [429, 500, 502, 503, 504]
       }
-
-      const coverage = parseMetric(text, /Coverage:\s*(\d+(?:\.\d+)?)%/);
-      const growthRate = parseMetric(text, /Growth Rate:\s*(\d+(?:\.\d+)?)%/);
-      const waterQuality = parseMetric(text, /Water Quality Impact:\s*(\d+(?:\.\d+)?)%/);
-
-      if (coverage === 0 && growthRate === 0 && waterQuality === 0) {
-        throw new Error('Failed to extract metrics from the analysis');
-      }
-
-      return {
-        coverage,
-        growth_rate: growthRate,
-        water_quality: waterQuality,
-        raw_analysis: text
-      };
-    });
+    );
 
     return result;
   } catch (error) {
