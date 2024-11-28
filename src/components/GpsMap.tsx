@@ -1,10 +1,10 @@
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { useToast } from "@/components/ui/use-toast";
 import type { GpsData } from '@/types/gps';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useEffect, useState } from 'react';
-import HeatmapLayer from 'react-leaflet-heatmap-layer';
+import 'leaflet.heat';
 
 // Fix for default marker icon
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -24,6 +24,30 @@ interface GpsMapProps {
   timeframe: "current" | "12h" | "1d" | "3d" | "1w";
 }
 
+// Custom component to handle heatmap layer
+const HeatmapLayer = ({ points, gradient }: { points: any[], gradient: any }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map || !points.length) return;
+
+    const heatLayer = (L as any).heatLayer(points, {
+      radius: 20,
+      blur: 15,
+      maxZoom: 20,
+      gradient
+    });
+
+    map.addLayer(heatLayer);
+
+    return () => {
+      map.removeLayer(heatLayer);
+    };
+  }, [map, points, gradient]);
+
+  return null;
+};
+
 const GpsMap = ({ data, timeframe }: GpsMapProps) => {
   const { toast } = useToast();
   const [map, setMap] = useState<L.Map | null>(null);
@@ -35,7 +59,6 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
   const getHeatmapPoints = () => {
     if (!data || data.length === 0) return [];
     
-    // Convert GPS data to heatmap points with intensity based on timeframe
     return data.map(entry => {
       if (!entry.latitude || !entry.longitude) return null;
       
@@ -89,7 +112,7 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
   return (
     <div style={{ height: "100%", width: "100%" }}>
       <MapContainer
-        ref={setMap}
+        whenCreated={setMap}
         style={{ height: "100%", width: "100%" }}
         center={defaultPosition}
         zoom={13}
@@ -101,13 +124,7 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
         />
         <HeatmapLayer
           points={getHeatmapPoints()}
-          longitudeExtractor={m => m[1]}
-          latitudeExtractor={m => m[0]}
-          intensityExtractor={m => m[2]}
-          radius={20}
-          blur={15}
           gradient={getHeatmapGradient()}
-          maxZoom={20}
         />
         {data && data.length > 0 && data.map((entry, index) => {
           if (!entry.latitude || !entry.longitude) return null;
