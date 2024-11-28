@@ -1,6 +1,11 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+if (!API_KEY) {
+  throw new Error('Missing Gemini API key. Please set VITE_GEMINI_API_KEY in your environment variables.');
+}
+
+const genAI = new GoogleGenerativeAI(API_KEY);
 
 export interface AnalysisResult {
   coverage: number;
@@ -53,22 +58,18 @@ const parseMetric = (text: string, pattern: RegExp): number => {
 };
 
 export const analyzeImageWithGemini = async (file: File): Promise<AnalysisResult> => {
-  if (!import.meta.env.VITE_GEMINI_API_KEY) {
-    throw new Error('Missing Gemini API key. Please set VITE_GEMINI_API_KEY in your environment variables.');
-  }
-
-  const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
-  
-  const prompt = `Analyze this image of water hyacinth. Provide detailed information in the following format:
-    Coverage: X%
-    Growth Rate: Y%
-    Water Quality Impact: Z%
-    
-    Then provide a detailed analysis.
-    
-    Note: Express all metrics as percentages between 0 and 100.`;
-  
   try {
+    const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+    
+    const prompt = `Analyze this image of water hyacinth. Provide detailed information in the following format:
+      Coverage: X%
+      Growth Rate: Y%
+      Water Quality Impact: Z%
+      
+      Then provide a detailed analysis.
+      
+      Note: Express all metrics as percentages between 0 and 100.`;
+    
     const imagePart = await fileToGenerativePart(file);
     
     let attempts = 0;
@@ -77,9 +78,12 @@ export const analyzeImageWithGemini = async (file: File): Promise<AnalysisResult
     
     while (attempts < maxAttempts) {
       try {
+        console.log('Attempting API call...', attempts + 1);
         const result = await model.generateContent([prompt, imagePart]);
         const response = await result.response;
         const text = response.text();
+        
+        console.log('API Response:', text);
         
         if (!text || text.trim().length === 0) {
           throw new Error('Empty response from Gemini API');
@@ -89,6 +93,8 @@ export const analyzeImageWithGemini = async (file: File): Promise<AnalysisResult
         const coverage = parseMetric(text, /Coverage:\s*(\d+(?:\.\d+)?)%/);
         const growthRate = parseMetric(text, /Growth Rate:\s*(\d+(?:\.\d+)?)%/);
         const waterQuality = parseMetric(text, /Water Quality Impact:\s*(\d+(?:\.\d+)?)%/);
+
+        console.log('Parsed metrics:', { coverage, growthRate, waterQuality });
 
         if (coverage === 0 && growthRate === 0 && waterQuality === 0) {
           throw new Error('Failed to extract metrics from the analysis');
@@ -101,6 +107,7 @@ export const analyzeImageWithGemini = async (file: File): Promise<AnalysisResult
           raw_analysis: text
         };
       } catch (error) {
+        console.error('API call attempt failed:', error);
         attempts++;
         if (attempts === maxAttempts) {
           throw new Error(`Failed to analyze image after ${maxAttempts} attempts: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -111,6 +118,7 @@ export const analyzeImageWithGemini = async (file: File): Promise<AnalysisResult
     
     throw new Error('Failed to analyze image after maximum attempts');
   } catch (error) {
+    console.error('Analysis error:', error);
     if (error instanceof Error) {
       throw new Error(`Image analysis failed: ${error.message}`);
     }
