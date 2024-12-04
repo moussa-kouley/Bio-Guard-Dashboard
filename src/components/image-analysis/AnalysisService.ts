@@ -12,9 +12,10 @@ export interface AnalysisResult {
 let model: tf.LayersModel | null = null;
 
 async function checkModelFiles() {
+  // Use relative paths from the root
   const files = [
-    '/ai-model/TrainedModelV5.json',
-    '/ai-model/TrainedModelV5weights.json'
+    './ai-model/TrainedModelV5.json',
+    './ai-model/TrainedModelV5weights.json'
   ];
 
   console.log('Checking for model files at:', files);
@@ -26,6 +27,9 @@ async function checkModelFiles() {
       const response = await fetch(file);
       console.log(`Response for ${file}:`, response.status);
       if (!response.ok) {
+        console.error(`Failed to fetch ${file}. Status: ${response.status}`);
+        const text = await response.text();
+        console.log(`Response content: ${text}`);
         missingFiles.push(file);
       }
     } catch (error) {
@@ -46,7 +50,7 @@ async function loadModel() {
       await checkModelFiles();
       
       console.log('Loading model from files...');
-      model = await tf.loadLayersModel('/ai-model/TrainedModelV5.json');
+      model = await tf.loadLayersModel('./ai-model/TrainedModelV5.json');
       
       if (!model) {
         throw new Error('Model failed to initialize');
