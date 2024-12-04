@@ -18,11 +18,20 @@ async function checkModelFiles() {
     '/ai-model/TrainedModelV5.weights.json'
   ];
 
+  const missingFiles = [];
   for (const file of files) {
-    const response = await fetch(file);
-    if (!response.ok) {
-      throw new Error(`Missing required model file: ${file}`);
+    try {
+      const response = await fetch(file);
+      if (!response.ok) {
+        missingFiles.push(file);
+      }
+    } catch (error) {
+      missingFiles.push(file);
     }
+  }
+
+  if (missingFiles.length > 0) {
+    throw new Error(`Missing required model files: ${missingFiles.join(', ')}. Please ensure all model files are present in the public/ai-model directory.`);
   }
 }
 
