@@ -14,11 +14,30 @@ let model: tf.LayersModel | null = null;
 async function loadModel() {
   if (!model) {
     try {
-      model = await tf.loadLayersModel('/ai-model/TrainedModelV5.json');
-      console.log('Model loaded successfully');
+      // First, check if model files exist
+      const modelResponse = await fetch('/ai-model/TrainedModelV5.json');
+      if (!modelResponse.ok) {
+        throw new Error('Model file not found');
+      }
+
+      // Load the model
+      model = await tf.loadLayersModel('/ai-model/TrainedModelV5.json', {
+        weightPathPrefix: '/ai-model/'
+      });
+      
+      if (!model) {
+        throw new Error('Model failed to initialize');
+      }
+
+      // Warm up the model with a dummy prediction
+      const dummyInput = tf.zeros([1, 224, 224, 3]);
+      await model.predict(dummyInput);
+      dummyInput.dispose();
+
+      console.log('Model loaded and initialized successfully');
     } catch (error) {
       console.error('Error loading model:', error);
-      throw new Error('Failed to load AI model');
+      throw new Error(`Failed to load AI model: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
   return model;
@@ -35,6 +54,11 @@ async function loadNpyFile(file: File): Promise<Float32Array> {
         
         const npLoader = new NP();
         const array = await npLoader.load(event.target.result as ArrayBuffer);
+        
+        if (!array || !array.data) {
+          throw new Error('Invalid .npy file format');
+        }
+
         resolve(array.data as Float32Array);
       } catch (error) {
         reject(error);
@@ -47,17 +71,26 @@ async function loadNpyFile(file: File): Promise<Float32Array> {
 
 export const analyzeNpyWithModel = async (file: File): Promise<AnalysisResult> => {
   try {
+    console.log('Starting analysis of .npy file');
     const modelInstance = await loadModel();
+    console.log('Model loaded successfully');
+
     const npyData = await loadNpyFile(file);
+    console.log('NPY file loaded successfully, shape:', npyData.length);
     
-    // Convert npy data to tensor
-    const inputTensor = tf.tensor(Array.from(npyData))
-      .reshape([1, 224, 224, 3]); // Adjust shape according to your model's requirements
+    // Convert npy data to tensor and ensure correct shape
+    const inputData = Array.from(npyData);
+    const inputTensor = tf.tensor(inputData)
+      .reshape([1, 224, 224, 3]);
     
+    console.log('Input tensor shape:', inputTensor.shape);
+
     // Get prediction from model
-    const prediction = await modelInstance.predict(inputTensor) as tf.Tensor;
+    const prediction = modelInstance.predict(inputTensor) as tf.Tensor;
     const heatmap = await prediction.array() as number[][];
     
+    console.log('Prediction generated successfully');
+
     // Calculate metrics from heatmap
     const coverage = calculateCoverage(heatmap);
     const growthRate = estimateGrowthRate(coverage);
@@ -76,7 +109,7 @@ export const analyzeNpyWithModel = async (file: File): Promise<AnalysisResult> =
     };
   } catch (error) {
     console.error('Error during data analysis:', error);
-    throw new Error('Failed to analyze .npy file');
+    throw new Error(`Failed to analyze .npy file: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
 
