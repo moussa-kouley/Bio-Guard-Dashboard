@@ -29,9 +29,8 @@ interface AnalysisData {
 const Dashboard = () => {
   const { toast } = useToast();
   const [showMap, setShowMap] = React.useState(false);
-
-  // Generate sample data for the last 7 days
-  const generateSampleData = () => {
+  const [analysisHistory, setAnalysisHistory] = React.useState<AnalysisData[]>(() => {
+    // Generate sample data for the last 7 days
     const data = [];
     const baseDate = new Date();
     
@@ -47,9 +46,7 @@ const Dashboard = () => {
       });
     }
     return data;
-  };
-
-  const [analysisHistory] = React.useState<AnalysisData[]>(generateSampleData());
+  });
 
   // Sample data for local development
   const sampleGpsData: GpsData[] = [
@@ -106,7 +103,7 @@ const Dashboard = () => {
         timestamp: event.detail.timestamp
       }]);
       
-      setShowMap(true); // Show map after analysis
+      setShowMap(true);
       
       toast({
         title: "Analysis Complete",
