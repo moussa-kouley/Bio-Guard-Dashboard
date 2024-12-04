@@ -11,19 +11,29 @@ export interface AnalysisResult {
 
 let model: tf.LayersModel | null = null;
 
+async function checkModelFiles() {
+  const files = [
+    '/ai-model/TrainedModelV5.json',
+    '/ai-model/TrainedModelV5.weights.bin',
+    '/ai-model/TrainedModelV5.weights.json'
+  ];
+
+  for (const file of files) {
+    const response = await fetch(file);
+    if (!response.ok) {
+      throw new Error(`Missing required model file: ${file}`);
+    }
+  }
+}
+
 async function loadModel() {
   if (!model) {
     try {
-      // First, check if model files exist
-      const modelResponse = await fetch('/ai-model/TrainedModelV5.json');
-      if (!modelResponse.ok) {
-        throw new Error('Model file not found');
-      }
-
-      // Load the model
-      model = await tf.loadLayersModel('/ai-model/TrainedModelV5.json', {
-        weightPathPrefix: '/ai-model/'
-      });
+      console.log('Checking model files...');
+      await checkModelFiles();
+      
+      console.log('Loading model from files...');
+      model = await tf.loadLayersModel('/ai-model/TrainedModelV5.json');
       
       if (!model) {
         throw new Error('Model failed to initialize');
