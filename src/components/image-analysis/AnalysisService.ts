@@ -1,4 +1,5 @@
 import * as tf from '@tensorflow/tfjs';
+import NP from 'npyjs';
 
 export interface AnalysisResult {
   coverage: number;
@@ -23,36 +24,35 @@ async function loadModel() {
   return model;
 }
 
-async function preprocessImage(file: File): Promise<tf.Tensor> {
+async function loadNpyFile(file: File): Promise<Float32Array> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = async (e) => {
+    reader.onload = async (event) => {
       try {
-        const img = new Image();
-        img.onload = async () => {
-          // Convert image to tensor and preprocess
-          const tensor = tf.browser.fromPixels(img)
-            .resizeNearestNeighbor([224, 224]) // Adjust size according to your model's requirements
-            .toFloat()
-            .expandDims();
-          
-          resolve(tensor);
-        };
-        img.onerror = () => reject(new Error('Failed to load image'));
-        img.src = e.target?.result as string;
+        if (!event.target?.result) {
+          throw new Error('Failed to read file');
+        }
+        
+        const npLoader = new NP();
+        const array = await npLoader.load(event.target.result as ArrayBuffer);
+        resolve(array.data as Float32Array);
       } catch (error) {
         reject(error);
       }
     };
     reader.onerror = () => reject(new Error('Failed to read file'));
-    reader.readAsDataURL(file);
+    reader.readAsArrayBuffer(file);
   });
 }
 
-export const analyzeImageWithModel = async (file: File): Promise<AnalysisResult> => {
+export const analyzeNpyWithModel = async (file: File): Promise<AnalysisResult> => {
   try {
     const modelInstance = await loadModel();
-    const inputTensor = await preprocessImage(file);
+    const npyData = await loadNpyFile(file);
+    
+    // Convert npy data to tensor
+    const inputTensor = tf.tensor(Array.from(npyData))
+      .reshape([1, 224, 224, 3]); // Adjust shape according to your model's requirements
     
     // Get prediction from model
     const prediction = await modelInstance.predict(inputTensor) as tf.Tensor;
@@ -71,12 +71,12 @@ export const analyzeImageWithModel = async (file: File): Promise<AnalysisResult>
       coverage,
       growth_rate: growthRate,
       water_quality: waterQuality,
-      raw_analysis: `Detected water hyacinth coverage at ${coverage.toFixed(1)}%. Growth patterns suggest proliferation at ${growthRate.toFixed(1)}% per week. Water quality impact is ${waterQuality.toFixed(1)}%.`,
+      raw_analysis: `Analyzed .npy data shows water hyacinth coverage at ${coverage.toFixed(1)}%. Growth patterns suggest proliferation at ${growthRate.toFixed(1)}% per week. Water quality impact is ${waterQuality.toFixed(1)}%.`,
       heatmap
     };
   } catch (error) {
-    console.error('Error during image analysis:', error);
-    throw new Error('Failed to analyze image');
+    console.error('Error during data analysis:', error);
+    throw new Error('Failed to analyze .npy file');
   }
 };
 
