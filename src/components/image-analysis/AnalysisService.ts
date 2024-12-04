@@ -14,8 +14,7 @@ let model: tf.LayersModel | null = null;
 async function checkModelFiles() {
   const files = [
     '/ai-model/TrainedModelV5.json',
-    '/ai-model/TrainedModelV5.weights.bin',
-    '/ai-model/TrainedModelV5.weights.json'
+    '/ai-model/TrainedModelV5weights.json'  // Updated to match your actual filename
   ];
 
   const missingFiles = [];
