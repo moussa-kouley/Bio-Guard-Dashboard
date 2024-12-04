@@ -1,76 +1,101 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-
-const genAI = new GoogleGenerativeAI(API_KEY || 'demo-key');
+import * as tf from '@tensorflow/tfjs';
 
 export interface AnalysisResult {
   coverage: number;
   growth_rate: number;
   water_quality: number;
   raw_analysis: string;
+  heatmap?: number[][];
 }
 
-// Updated demo data to match requested metrics
-const demoAnalysisResults: AnalysisResult[] = [
-  {
-    coverage: 6.8,
-    growth_rate: 1.3,
-    water_quality: 1.2,
-    raw_analysis: "Detected moderate water hyacinth coverage at 6.8%. Growth patterns suggest slow proliferation at 1.3% per week. Water quality impact is minimal at 1.2%."
-  },
-  {
-    coverage: 7.0,
-    growth_rate: 1.4,
-    water_quality: 1.3,
-    raw_analysis: "Water hyacinth coverage observed at 7.0%. Growth rate trending at 1.4% weekly with minor water quality impact of 1.3%."
-  },
-  {
-    coverage: 6.5,
-    growth_rate: 1.2,
-    water_quality: 1.1,
-    raw_analysis: "Current water hyacinth coverage at 6.5% with steady growth rate of 1.2% per week. Water quality impact measured at 1.1%."
-  }
-];
+let model: tf.LayersModel | null = null;
 
-async function fileToGenerativePart(file: File) {
-  const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
-  if (!validTypes.includes(file.type)) {
-    throw new Error('Invalid file type. Please upload a JPEG, PNG, or WebP image.');
+async function loadModel() {
+  if (!model) {
+    try {
+      model = await tf.loadLayersModel('/ai-model/TrainedModelV5.json');
+      console.log('Model loaded successfully');
+    } catch (error) {
+      console.error('Error loading model:', error);
+      throw new Error('Failed to load AI model');
+    }
   }
+  return model;
+}
 
-  if (file.size > 4 * 1024 * 1024) {
-    throw new Error('File size too large. Please upload an image smaller than 4MB.');
-  }
-
-  return new Promise<{ inlineData: { data: string; mimeType: string } }>((resolve, reject) => {
+async function preprocessImage(file: File): Promise<tf.Tensor> {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onloadend = () => {
-      if (!reader.result || typeof reader.result !== 'string') {
-        reject(new Error('Failed to read image file'));
-        return;
+    reader.onload = async (e) => {
+      try {
+        const img = new Image();
+        img.onload = async () => {
+          // Convert image to tensor and preprocess
+          const tensor = tf.browser.fromPixels(img)
+            .resizeNearestNeighbor([224, 224]) // Adjust size according to your model's requirements
+            .toFloat()
+            .expandDims();
+          
+          resolve(tensor);
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = e.target?.result as string;
+      } catch (error) {
+        reject(error);
       }
-      const base64Data = reader.result.split(',')[1];
-      resolve({
-        inlineData: { data: base64Data, mimeType: file.type },
-      });
     };
     reader.onerror = () => reject(new Error('Failed to read file'));
     reader.readAsDataURL(file);
   });
 }
 
-export const analyzeImageWithGemini = async (file: File): Promise<AnalysisResult> => {
-  // Always return demo data for now to avoid API errors
-  return demoAnalysisResults[Math.floor(Math.random() * demoAnalysisResults.length)];
+export const analyzeImageWithModel = async (file: File): Promise<AnalysisResult> => {
+  try {
+    const modelInstance = await loadModel();
+    const inputTensor = await preprocessImage(file);
+    
+    // Get prediction from model
+    const prediction = await modelInstance.predict(inputTensor) as tf.Tensor;
+    const heatmap = await prediction.array() as number[][];
+    
+    // Calculate metrics from heatmap
+    const coverage = calculateCoverage(heatmap);
+    const growthRate = estimateGrowthRate(coverage);
+    const waterQuality = estimateWaterQuality(coverage);
+
+    // Cleanup tensors
+    inputTensor.dispose();
+    prediction.dispose();
+
+    return {
+      coverage,
+      growth_rate: growthRate,
+      water_quality: waterQuality,
+      raw_analysis: `Detected water hyacinth coverage at ${coverage.toFixed(1)}%. Growth patterns suggest proliferation at ${growthRate.toFixed(1)}% per week. Water quality impact is ${waterQuality.toFixed(1)}%.`,
+      heatmap
+    };
+  } catch (error) {
+    console.error('Error during image analysis:', error);
+    throw new Error('Failed to analyze image');
+  }
 };
 
-const parseMetric = (text: string, pattern: RegExp): number => {
-  const match = text.match(pattern);
-  if (!match) return 0;
-  const value = parseFloat(match[1]);
-  return isNaN(value) ? 0 : Math.min(Math.max(value, 0), 100);
-};
+function calculateCoverage(heatmap: number[][]): number {
+  // Calculate the percentage of area covered by water hyacinth
+  const total = heatmap.length * heatmap[0].length;
+  const covered = heatmap.flat().reduce((sum, val) => sum + (val > 0.5 ? 1 : 0), 0);
+  return (covered / total) * 100;
+}
+
+function estimateGrowthRate(coverage: number): number {
+  // Estimate weekly growth rate based on current coverage
+  return Math.min(coverage * 0.2, 5.0); // Cap at 5% weekly growth
+}
+
+function estimateWaterQuality(coverage: number): number {
+  // Estimate water quality impact (inverse relationship with coverage)
+  return Math.max(100 - (coverage * 1.5), 60); // Minimum quality of 60%
+}
 
 export const saveAnalysisToDatabase = async (prediction: AnalysisResult) => {
   try {

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
 import ImageUploader from './image-analysis/ImageUploader';
-import { analyzeImageWithGemini, saveAnalysisToDatabase, type AnalysisResult } from './image-analysis/AnalysisService';
+import { analyzeImageWithModel, saveAnalysisToDatabase, type AnalysisResult } from './image-analysis/AnalysisService';
 
 const ImagePrediction = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -27,7 +27,8 @@ const ImagePrediction = () => {
           coverage: prediction.coverage,
           growth_rate: prediction.growth_rate,
           water_quality: prediction.water_quality
-        }
+        },
+        heatmap: prediction.heatmap
       }
     });
     window.dispatchEvent(event);
@@ -66,7 +67,7 @@ const ImagePrediction = () => {
       const predictions = await Promise.all(
         selectedFiles.map(async (file) => {
           try {
-            return await analyzeImageWithGemini(file);
+            return await analyzeImageWithModel(file);
           } catch (error) {
             toast({
               title: `Error analyzing ${file.name}`,
@@ -94,6 +95,7 @@ const ImagePrediction = () => {
         growth_rate: validPredictions.reduce((sum, p) => sum + p.growth_rate, 0) / validPredictions.length,
         water_quality: validPredictions.reduce((sum, p) => sum + p.water_quality, 0) / validPredictions.length,
         raw_analysis: `Combined analysis of ${validPredictions.length} images: ${validPredictions.map(p => p.raw_analysis).join(' ')}`,
+        heatmap: validPredictions[0].heatmap // Use the first image's heatmap for visualization
       };
 
       await saveAnalysisToDatabase(averagePrediction);
