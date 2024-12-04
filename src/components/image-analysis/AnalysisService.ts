@@ -14,17 +14,22 @@ let model: tf.LayersModel | null = null;
 async function checkModelFiles() {
   const files = [
     '/ai-model/TrainedModelV5.json',
-    '/ai-model/TrainedModelV5weights.json'  // Updated to match your actual filename
+    '/ai-model/TrainedModelV5weights.json'
   ];
+
+  console.log('Checking for model files at:', files);
 
   const missingFiles = [];
   for (const file of files) {
     try {
+      console.log(`Attempting to fetch: ${file}`);
       const response = await fetch(file);
+      console.log(`Response for ${file}:`, response.status);
       if (!response.ok) {
         missingFiles.push(file);
       }
     } catch (error) {
+      console.error(`Error fetching ${file}:`, error);
       missingFiles.push(file);
     }
   }
@@ -132,20 +137,17 @@ export const analyzeNpyWithModel = async (file: File): Promise<AnalysisResult> =
 };
 
 function calculateCoverage(heatmap: number[][]): number {
-  // Calculate the percentage of area covered by water hyacinth
   const total = heatmap.length * heatmap[0].length;
   const covered = heatmap.flat().reduce((sum, val) => sum + (val > 0.5 ? 1 : 0), 0);
   return (covered / total) * 100;
 }
 
 function estimateGrowthRate(coverage: number): number {
-  // Estimate weekly growth rate based on current coverage
-  return Math.min(coverage * 0.2, 5.0); // Cap at 5% weekly growth
+  return Math.min(coverage * 0.2, 5.0);
 }
 
 function estimateWaterQuality(coverage: number): number {
-  // Estimate water quality impact (inverse relationship with coverage)
-  return Math.max(100 - (coverage * 1.5), 60); // Minimum quality of 60%
+  return Math.max(100 - (coverage * 1.5), 60);
 }
 
 export const saveAnalysisToDatabase = async (prediction: AnalysisResult) => {
