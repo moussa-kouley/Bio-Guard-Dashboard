@@ -10,9 +10,9 @@ export interface AnalysisResult {
 }
 
 let model: tf.LayersModel | null = null;
+const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
 
 async function checkModelFiles() {
-  // Use absolute paths from the root
   const files = [
     '/ai-model/TrainedModelV5.json',
     '/ai-model/TrainedModelV5weights.json'
@@ -20,35 +20,35 @@ async function checkModelFiles() {
 
   console.log('Checking for model files at:', files);
 
-  const missingFiles = [];
   for (const file of files) {
     try {
       const fullPath = `${window.location.origin}${file}`;
       console.log(`Attempting to fetch: ${fullPath}`);
       const response = await fetch(fullPath);
-      console.log(`Response for ${file}:`, response.status);
       if (!response.ok) {
-        console.error(`Failed to fetch ${file}. Status: ${response.status}`);
-        const text = await response.text();
-        console.log(`Response content: ${text}`);
-        missingFiles.push(file);
+        console.log(`Model file ${file} not found. Using mock predictions for development.`);
+        return false;
       }
     } catch (error) {
-      console.error(`Error fetching ${file}:`, error);
-      missingFiles.push(file);
+      console.log(`Error checking model file ${file}:`, error);
+      return false;
     }
   }
-
-  if (missingFiles.length > 0) {
-    throw new Error(`Missing required model files: ${missingFiles.join(', ')}. Please ensure all model files are present in the public/ai-model directory.`);
-  }
+  return true;
 }
 
 async function loadModel() {
   if (!model) {
     try {
-      console.log('Checking model files...');
-      await checkModelFiles();
+      const modelExists = await checkModelFiles();
+      
+      if (!modelExists) {
+        if (IS_DEVELOPMENT) {
+          console.log('Running in development mode with mock predictions');
+          return null;
+        }
+        throw new Error('Model files not found');
+      }
       
       const modelPath = `${window.location.origin}/ai-model/TrainedModelV5.json`;
       console.log('Loading model from:', modelPath);
@@ -58,15 +58,16 @@ async function loadModel() {
         throw new Error('Model failed to initialize');
       }
 
-      // Warm up the model with a dummy prediction
       const dummyInput = tf.zeros([1, 224, 224, 3]);
       await model.predict(dummyInput);
       dummyInput.dispose();
 
-      console.log('Model loaded and initialized successfully');
+      console.log('Model loaded successfully');
     } catch (error) {
       console.error('Error loading model:', error);
-      throw new Error(`Failed to load AI model: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      if (!IS_DEVELOPMENT) {
+        throw new Error(`Failed to load AI model: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
     }
   }
   return model;
@@ -98,34 +99,51 @@ async function loadNpyFile(file: File): Promise<Float32Array> {
   });
 }
 
+function generateMockPrediction(): AnalysisResult {
+  const coverage = 25 + Math.random() * 30; // Random coverage between 25-55%
+  const growthRate = 2 + Math.random() * 3; // Random growth rate between 2-5%
+  const waterQuality = 70 + Math.random() * 20; // Random water quality between 70-90%
+
+  return {
+    coverage,
+    growth_rate: growthRate,
+    water_quality: waterQuality,
+    raw_analysis: `Mock analysis: Water hyacinth coverage at ${coverage.toFixed(1)}%. Growth patterns suggest proliferation at ${growthRate.toFixed(1)}% per week. Water quality impact is ${waterQuality.toFixed(1)}%.`,
+    heatmap: Array(10).fill(Array(10).fill(0.5)) // Mock heatmap
+  };
+}
+
 export const analyzeNpyWithModel = async (file: File): Promise<AnalysisResult> => {
   try {
     console.log('Starting analysis of .npy file');
     const modelInstance = await loadModel();
-    console.log('Model loaded successfully');
+
+    if (!modelInstance && IS_DEVELOPMENT) {
+      console.log('Using mock predictions for development');
+      return generateMockPrediction();
+    }
+
+    if (!modelInstance) {
+      throw new Error('Model not available');
+    }
 
     const npyData = await loadNpyFile(file);
     console.log('NPY file loaded successfully, shape:', npyData.length);
     
-    // Convert npy data to tensor and ensure correct shape
     const inputData = Array.from(npyData);
-    const inputTensor = tf.tensor(inputData)
-      .reshape([1, 224, 224, 3]);
+    const inputTensor = tf.tensor(inputData).reshape([1, 224, 224, 3]);
     
     console.log('Input tensor shape:', inputTensor.shape);
 
-    // Get prediction from model
     const prediction = modelInstance.predict(inputTensor) as tf.Tensor;
     const heatmap = await prediction.array() as number[][];
     
     console.log('Prediction generated successfully');
 
-    // Calculate metrics from heatmap
     const coverage = calculateCoverage(heatmap);
     const growthRate = estimateGrowthRate(coverage);
     const waterQuality = estimateWaterQuality(coverage);
 
-    // Cleanup tensors
     inputTensor.dispose();
     prediction.dispose();
 
@@ -138,6 +156,10 @@ export const analyzeNpyWithModel = async (file: File): Promise<AnalysisResult> =
     };
   } catch (error) {
     console.error('Error during data analysis:', error);
+    if (IS_DEVELOPMENT) {
+      console.log('Falling back to mock predictions due to error');
+      return generateMockPrediction();
+    }
     throw new Error(`Failed to analyze .npy file: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
