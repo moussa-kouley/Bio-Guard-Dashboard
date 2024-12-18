@@ -30,30 +30,32 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
   const markers = useMemo(() => {
     if (!Array.isArray(data)) return [];
     
-    return data.map((entry, index) => {
-      if (!entry?.latitude || !entry?.longitude) return null;
-      const position: [number, number] = [entry.latitude, entry.longitude];
-      return (
-        <Marker 
-          key={`marker-${index}`}
-          position={position}
-        >
-          <Popup>
-            <div>
-              <h2>Data Point</h2>
-              <p>Latitude: {entry.latitude}</p>
-              <p>Longitude: {entry.longitude}</p>
-              <p>Altitude: {entry.altitude} m</p>
-              <p>HDOP: {entry.hdop}</p>
-              <p>Temperature: {entry.temperature} °C</p>
-              <p>pH: {entry.ph}</p>
-              <p>Dissolved Solids: {entry.dissolvedsolids} mg/L</p>
-              <p>Timestamp: {entry.timestamp}</p>
-            </div>
-          </Popup>
-        </Marker>
-      );
-    }).filter(Boolean);
+    return data
+      .map((entry, index) => {
+        if (!entry?.latitude || !entry?.longitude) return null;
+        const position: [number, number] = [entry.latitude, entry.longitude];
+        return (
+          <Marker 
+            key={`marker-${index}`}
+            position={position}
+          >
+            <Popup>
+              <div>
+                <h2>Data Point</h2>
+                <p>Latitude: {entry.latitude}</p>
+                <p>Longitude: {entry.longitude}</p>
+                <p>Altitude: {entry.altitude} m</p>
+                <p>HDOP: {entry.hdop}</p>
+                <p>Temperature: {entry.temperature} °C</p>
+                <p>pH: {entry.ph}</p>
+                <p>Dissolved Solids: {entry.dissolvedsolids} mg/L</p>
+                <p>Timestamp: {entry.timestamp}</p>
+              </div>
+            </Popup>
+          </Marker>
+        );
+      })
+      .filter(Boolean);
   }, [data]);
 
   const heatmapPoints = useMemo(() => generateHeatmapPoints(timeframe), [timeframe]);
