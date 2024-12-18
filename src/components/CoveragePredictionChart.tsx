@@ -25,27 +25,31 @@ interface CoveragePredictionChartProps {
 const CoveragePredictionChart = ({ data }: CoveragePredictionChartProps) => {
   return (
     <div className="h-[400px] w-full bg-white p-4 rounded-lg">
+      <h2 className="text-center text-xl font-semibold mb-4">Prediction from January 2023 Onwards</h2>
       <ResponsiveContainer>
         <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
           <XAxis 
             dataKey="date" 
-            tickFormatter={(date) => format(new Date(date), 'MMM yyyy')}
+            tickFormatter={(date) => format(new Date(date), 'yyyy')}
             stroke="#666"
             tick={{ fill: '#666', fontSize: 12 }}
+            domain={['dataMin', 'dataMax']}
           />
           <YAxis 
             label={{ 
-              value: 'Coverage Percentage', 
+              value: 'Growth Percentage', 
               angle: -90, 
               position: 'insideLeft',
               style: { fill: '#666', fontSize: 12 }
             }}
             tick={{ fill: '#666', fontSize: 12 }}
             stroke="#666"
+            domain={[0, 1]}
+            tickCount={6}
           />
           <Tooltip
-            labelFormatter={(date) => format(new Date(date), 'dd MMM yyyy')}
+            labelFormatter={(date) => format(new Date(date), 'MMM yyyy')}
             formatter={(value: number) => [`${(value * 100).toFixed(1)}%`, '']}
             contentStyle={{
               backgroundColor: 'white',
@@ -55,10 +59,10 @@ const CoveragePredictionChart = ({ data }: CoveragePredictionChartProps) => {
             }}
           />
           <Legend 
+            align="right"
             verticalAlign="top"
             height={36}
-            iconType="circle"
-            iconSize={8}
+            iconType="line"
           />
           
           {/* Confidence interval area */}
@@ -66,7 +70,7 @@ const CoveragePredictionChart = ({ data }: CoveragePredictionChartProps) => {
             type="monotone"
             dataKey="confidenceUpper"
             stroke="none"
-            fill="#4CAF50"
+            fill="#0000FF"
             fillOpacity={0.1}
             name="Confidence Interval"
           />
@@ -74,7 +78,7 @@ const CoveragePredictionChart = ({ data }: CoveragePredictionChartProps) => {
             type="monotone"
             dataKey="confidenceLower"
             stroke="none"
-            fill="#4CAF50"
+            fill="#0000FF"
             fillOpacity={0.1}
             name=" "
           />
@@ -83,21 +87,20 @@ const CoveragePredictionChart = ({ data }: CoveragePredictionChartProps) => {
           <Line
             type="monotone"
             dataKey="historical"
-            stroke="#1a1a1a"
+            stroke="#000000"
             name="Historical Data"
-            strokeWidth={2}
-            dot={{ fill: '#1a1a1a', r: 4 }}
-            activeDot={{ r: 6, fill: '#1a1a1a' }}
+            strokeWidth={1.5}
+            dot={false}
+            activeDot={{ r: 4, fill: '#000000' }}
           />
           <Line
             type="monotone"
             dataKey="predicted"
-            stroke="#4CAF50"
-            name="Predicted Growth"
-            strokeWidth={2}
-            strokeDasharray="5 5"
-            dot={{ fill: '#4CAF50', r: 4 }}
-            activeDot={{ r: 6, fill: '#4CAF50' }}
+            stroke="#0000FF"
+            name="Predicted Data (from 2023)"
+            strokeWidth={1.5}
+            dot={false}
+            activeDot={{ r: 4, fill: '#0000FF' }}
           />
         </LineChart>
       </ResponsiveContainer>

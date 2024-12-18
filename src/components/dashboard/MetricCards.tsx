@@ -120,36 +120,49 @@ export const MetricCards = ({ latestData, data }: MetricCardsProps) => {
 
   // Generate sample prediction data
   const predictionData = React.useMemo(() => {
-    const startDate = new Date('2020-01-01');
     const data = [];
+    const startDate = new Date('2020-01-01');
+    const endDate = new Date('2025-01-01');
+    const monthStep = 1; // One data point per month
     
-    // Generate historical data (2020-2022)
-    for (let i = 0; i < 36; i++) {
-      const date = new Date(startDate);
-      date.setMonth(date.getMonth() + i);
-      
-      const baseValue = 0.3 + Math.sin(i / 5) * 0.2 + Math.random() * 0.2;
-      data.push({
-        date: date.toISOString(),
-        historical: baseValue,
-      });
-    }
+    // Helper function to generate realistic fluctuating values
+    const generateValue = (baseValue: number, volatility: number, min: number, max: number) => {
+      let value = baseValue + (Math.random() - 0.5) * volatility;
+      return Math.max(min, Math.min(max, value));
+    };
+
+    let currentValue = 0.15; // Starting value
     
-    // Generate predicted data (2023-2025)
-    for (let i = 36; i < 60; i++) {
-      const date = new Date(startDate);
-      date.setMonth(date.getMonth() + i);
+    // Generate data points
+    for (let date = new Date(startDate); date <= endDate; date.setMonth(date.getMonth() + monthStep)) {
+      const isPredicted = date >= new Date('2023-01-01');
+      const month = date.getMonth();
       
-      const predictedValue = 0.4 + Math.sin(i / 5) * 0.15 + Math.random() * 0.1;
-      const confidence = 0.15;
+      // Add seasonal variation (higher in summer months)
+      const seasonalFactor = Math.sin((month / 12) * Math.PI * 2) * 0.2;
       
-      data.push({
-        date: date.toISOString(),
-        historical: i < 48 ? 0.35 + Math.random() * 0.2 : undefined,
-        predicted: predictedValue,
-        confidenceLower: predictedValue - confidence,
-        confidenceUpper: predictedValue + confidence,
-      });
+      // Generate more volatile historical data
+      if (!isPredicted) {
+        currentValue = generateValue(currentValue + seasonalFactor, 0.15, 0, 1);
+        data.push({
+          date: date.toISOString(),
+          historical: currentValue,
+        });
+      } else {
+        // Smoother predicted data with confidence intervals
+        const predictedValue = generateValue(currentValue + seasonalFactor, 0.08, 0, 1);
+        const confidence = 0.15 + Math.abs(seasonalFactor) * 0.1;
+        
+        data.push({
+          date: date.toISOString(),
+          historical: date < new Date('2023-06-01') ? currentValue : undefined,
+          predicted: predictedValue,
+          confidenceLower: Math.max(0, predictedValue - confidence),
+          confidenceUpper: Math.min(1, predictedValue + confidence),
+        });
+        
+        currentValue = predictedValue;
+      }
     }
     
     return data;
