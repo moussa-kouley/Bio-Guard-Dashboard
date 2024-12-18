@@ -1,43 +1,118 @@
-import React from 'react';
-import { Upload, AlertCircle } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import React, { useState, useRef } from 'react';
+import * as tf from '@tensorflow/tfjs';
+import { Button } from '../ui/button';
 
-interface ImageUploaderProps {
-  selectedFiles: File[];
-  onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-}
+export const ImageUploader: React.FC = () => {
+  const [inputFile, setInputFile] = useState<File | null>(null);
+  const [metadataFile, setMetadataFile] = useState<File | null>(null);
+  const [predictionResult, setPredictionResult] = useState<string | null>(null);
+  const inputFileRef = useRef<HTMLInputElement>(null);
+  const metadataFileRef = useRef<HTMLInputElement>(null);
 
-const ImageUploader = ({ selectedFiles, onFileChange }: ImageUploaderProps) => {
+  const handleInputFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setInputFile(file);
+    }
+  };
+
+  const handleMetadataFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setMetadataFile(file);
+    }
+  };
+
+  const handleUploadAndPredict = async () => {
+    if (!inputFile || !metadataFile) {
+      alert('Please select both input and metadata files');
+      return;
+    }
+
+    try {
+      // Read input file as ArrayBuffer
+      const inputArrayBuffer = await inputFile.arrayBuffer();
+      const metadataArrayBuffer = await metadataFile.arrayBuffer();
+
+      // Save files to public directory
+      await saveFileToPublic(inputFile, 'input_data.npy');
+      await saveFileToPublic(metadataFile, 'metadata.npy');
+
+      // Load the Keras model
+      const model = await tf.loadLayersModel('/ai-model/saved_model/model.json');
+
+      // Prepare input data (you may need to adjust based on your specific model)
+      const inputTensor = tf.tensor(new Float32Array(inputArrayBuffer));
+      
+      // Make prediction
+      const prediction = model.predict(inputTensor) as tf.Tensor;
+      const predictionArray = await prediction.array();
+
+      // Process and display prediction
+      setPredictionResult(JSON.stringify(predictionArray));
+    } catch (error) {
+      console.error('Prediction error:', error);
+      alert('Failed to process files or make prediction');
+    }
+  };
+
+  // Helper function to save uploaded file to public directory
+  const saveFileToPublic = async (file: File, filename: string) => {
+    const formData = new FormData();
+    formData.append('file', file, filename);
+
+    try {
+      const response = await fetch('/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('File upload failed');
+      }
+    } catch (error) {
+      console.error('File save error:', error);
+      throw error;
+    }
+  };
+
   return (
-    <Card className="p-6">
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Upload Images for Analysis</h2>
-        <div className="flex flex-col items-center p-4 border-2 border-dashed rounded-lg">
-          <Upload className="w-12 h-12 text-gray-400 mb-2" />
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={onFileChange}
-            className="hidden"
-            id="image-upload"
-          />
-          <label
-            htmlFor="image-upload"
-            className="cursor-pointer text-sm text-gray-600 hover:text-gray-800"
-          >
-            {selectedFiles.length 
-              ? `${selectedFiles.length} images selected` 
-              : "Click to select images"}
-          </label>
-        </div>
-        <div className="text-sm text-gray-500 flex items-center gap-2">
-          <AlertCircle className="w-4 h-4" />
-          <span>Supported formats: JPG, PNG (max 5MB)</span>
-        </div>
+    <div className="flex flex-col space-y-4">
+      <div>
+        <label className="block mb-2">Upload Input Data (.npy)</label>
+        <input 
+          type="file" 
+          ref={inputFileRef}
+          accept=".npy" 
+          onChange={handleInputFileChange} 
+          className="mb-2"
+        />
       </div>
-    </Card>
+
+      <div>
+        <label className="block mb-2">Upload Metadata (.npy)</label>
+        <input 
+          type="file" 
+          ref={metadataFileRef}
+          accept=".npy" 
+          onChange={handleMetadataFileChange} 
+          className="mb-2"
+        />
+      </div>
+
+      <Button 
+        onClick={handleUploadAndPredict}
+        disabled={!inputFile || !metadataFile}
+      >
+        Upload and Predict
+      </Button>
+
+      {predictionResult && (
+        <div className="mt-4">
+          <h3 className="font-bold">Prediction Result:</h3>
+          <pre className="bg-gray-100 p-2 rounded">{predictionResult}</pre>
+        </div>
+      )}
+    </div>
   );
 };
-
-export default ImageUploader;

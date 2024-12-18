@@ -1,18 +1,34 @@
-const express = require('express');
-const path = require('path');
-require('dotenv').config();
+import express from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const upload = multer({ dest: 'public/ai-model/' });
 
-// Serve static files from the dist directory
-app.use(express.static(path.join(__dirname, 'dist')));
+// File upload endpoint
+app.post('/upload', upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).send('No file uploaded.');
+  }
 
-// Handle all routes by serving the index.html
-app.get('/*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  const tempPath = req.file.path;
+  const targetPath = path.join('public/ai-model', req.file.originalname);
+
+  // Move file from temp location to target location
+  fs.rename(tempPath, targetPath, (err) => {
+    if (err) {
+      fs.unlink(tempPath, () => {
+        res.status(500).send('Error processing file');
+      });
+      return;
+    }
+    res.status(200).send('File uploaded successfully');
+  });
 });
 
+// Start server
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
