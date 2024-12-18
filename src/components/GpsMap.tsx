@@ -24,11 +24,8 @@ interface GpsMapProps {
   timeframe: TimeframeType;
 }
 
-// Separate component for the heatmap layer to properly use the map context
-const HeatmapLayer: React.FC<{
-  points: [number, number, number][];
-  gradient: Record<string, string>;
-}> = ({ points, gradient }) => {
+// Separate component for the heatmap layer
+const HeatmapLayer = ({ points, gradient }: { points: [number, number, number][]; gradient: Record<string, string> }) => {
   const map = useMap();
 
   React.useEffect(() => {
@@ -53,11 +50,11 @@ const HeatmapLayer: React.FC<{
 };
 
 // Main map content component
-const MapContent: React.FC<{
-  data: GpsData[];
-  heatmapPoints: [number, number, number][];
-  heatmapGradient: Record<string, string>;
-}> = ({ data, heatmapPoints, heatmapGradient }) => {
+const MapContent = ({ data, heatmapPoints, heatmapGradient }: { 
+  data: GpsData[]; 
+  heatmapPoints: [number, number, number][]; 
+  heatmapGradient: Record<string, string>; 
+}) => {
   const markers = useMemo(() => {
     if (!Array.isArray(data)) return [];
     
@@ -100,7 +97,7 @@ const MapContent: React.FC<{
   );
 };
 
-const GpsMap: React.FC<GpsMapProps> = ({ data, timeframe }) => {
+const GpsMap = ({ data, timeframe }: GpsMapProps) => {
   const defaultPosition: [number, number] = [-25.7487, 27.8739];
   const heatmapPoints = useMemo(() => generateHeatmapPoints(timeframe), [timeframe]);
   const heatmapGradient = useMemo(() => getHeatmapGradient(timeframe), [timeframe]);
