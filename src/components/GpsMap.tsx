@@ -54,7 +54,7 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
           </Popup>
         </Marker>
       );
-    });
+    }).filter(Boolean);
   }, [data]);
 
   const heatmapPoints = useMemo(() => generateHeatmapPoints(timeframe), [timeframe]);
@@ -68,11 +68,11 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
         zoom={13}
         scrollWheelZoom={true}
       >
-        <MapController center={defaultPosition} zoom={13} />
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
+        <MapController center={defaultPosition} zoom={13} />
         {timeframe && (
           <HeatmapLayer
             points={heatmapPoints}
