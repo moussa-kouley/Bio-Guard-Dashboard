@@ -9,7 +9,7 @@ import { MapFilters } from "@/components/map/MapFilters";
 import { LatestMeasurements } from "@/components/map/LatestMeasurements";
 import { supabase } from "@/lib/supabase";
 
-const Map = () => {
+const Map: React.FC = () => {
   const { toast } = useToast();
   const [selectedRegion, setSelectedRegion] = useState("");
   const [selectedSeverity, setSelectedSeverity] = useState("");
@@ -21,7 +21,7 @@ const Map = () => {
     timestamp: null as string | null,
   });
 
-  const { data: gpsData = [], isError } = useQuery({
+  const { data: gpsData = [] } = useQuery({
     queryKey: ['gpsData', selectedTimeframe],
     queryFn: async () => {
       try {
@@ -81,14 +81,6 @@ const Map = () => {
     setSelectedTimeframe(timeframe);
   }, []);
 
-  if (isError) {
-    toast({
-      title: "Error",
-      description: "Failed to fetch GPS data",
-      variant: "destructive",
-    });
-  }
-
   return (
     <div className="p-6 mt-16">
       <div className="flex justify-between items-center mb-6">
@@ -104,7 +96,7 @@ const Map = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="md:col-span-3 space-y-6">
           <Card className="h-[600px]">
-            <GpsMap data={gpsData} timeframe={selectedTimeframe} />
+            <GpsMap data={gpsData || []} timeframe={selectedTimeframe} />
           </Card>
 
           <div className="grid grid-cols-6 gap-4">
@@ -120,46 +112,20 @@ const Map = () => {
                 </div>
               </div>
             </Card>
-            <Card 
-              className={`p-4 cursor-pointer transition-colors text-center ${
-                selectedTimeframe === "current" ? "bg-primary text-primary-foreground" : "hover:bg-primary/10"
-              }`}
-              onClick={() => handleTimeframeClick("current")}
-            >
-              <span className="font-medium">Current Water Hyacinth</span>
-            </Card>
-            <Card 
-              className={`p-4 cursor-pointer transition-colors text-center ${
-                selectedTimeframe === "12h" ? "bg-primary text-primary-foreground" : "hover:bg-primary/10"
-              }`}
-              onClick={() => handleTimeframeClick("12h")}
-            >
-              <span className="font-medium">Prediction 12 hours</span>
-            </Card>
-            <Card 
-              className={`p-4 cursor-pointer transition-colors text-center ${
-                selectedTimeframe === "1d" ? "bg-primary text-primary-foreground" : "hover:bg-primary/10"
-              }`}
-              onClick={() => handleTimeframeClick("1d")}
-            >
-              <span className="font-medium">Prediction 1 day</span>
-            </Card>
-            <Card 
-              className={`p-4 cursor-pointer transition-colors text-center ${
-                selectedTimeframe === "3d" ? "bg-primary text-primary-foreground" : "hover:bg-primary/10"
-              }`}
-              onClick={() => handleTimeframeClick("3d")}
-            >
-              <span className="font-medium">Prediction 3 days</span>
-            </Card>
-            <Card 
-              className={`p-4 cursor-pointer transition-colors text-center ${
-                selectedTimeframe === "1w" ? "bg-primary text-primary-foreground" : "hover:bg-primary/10"
-              }`}
-              onClick={() => handleTimeframeClick("1w")}
-            >
-              <span className="font-medium">Prediction 1 week</span>
-            </Card>
+            {["current", "12h", "1d", "3d", "1w"].map((timeframe) => (
+              <Card 
+                key={timeframe}
+                className={`p-4 cursor-pointer transition-colors text-center ${
+                  selectedTimeframe === timeframe ? "bg-primary text-primary-foreground" : "hover:bg-primary/10"
+                }`}
+                onClick={() => handleTimeframeClick(timeframe as "current" | "12h" | "1d" | "3d" | "1w")}
+              >
+                <span className="font-medium">
+                  {timeframe === "current" ? "Current Water Hyacinth" :
+                   `Prediction ${timeframe}`}
+                </span>
+              </Card>
+            ))}
           </div>
         </div>
 
