@@ -9,10 +9,12 @@ interface MapContentProps {
   timeframe: TimeframeType;
 }
 
-const MapContent = ({ data, timeframe }: MapContentProps) => {
+const MapContent: React.FC<MapContentProps> = ({ data, timeframe }) => {
   const map = useMap();
   const points = generateHeatmapPoints(timeframe);
   const gradient = getHeatmapGradient(timeframe);
+
+  if (!map) return null;
 
   return (
     <>
@@ -20,10 +22,12 @@ const MapContent = ({ data, timeframe }: MapContentProps) => {
       {data.map((entry, index) => {
         if (!entry?.latitude || !entry?.longitude) return null;
         
+        const position: [number, number] = [entry.latitude, entry.longitude];
+        
         return (
           <Marker 
             key={`marker-${index}`}
-            position={[entry.latitude, entry.longitude]}
+            position={position}
           >
             <Popup>
               <div>
