@@ -6,7 +6,7 @@ interface MapMarkersProps {
   data: GpsData[];
 }
 
-const MapMarkers = React.memo(({ data }: MapMarkersProps) => {
+const MapMarkers = ({ data }: MapMarkersProps) => {
   return (
     <>
       {data
@@ -36,8 +36,6 @@ const MapMarkers = React.memo(({ data }: MapMarkersProps) => {
         })}
     </>
   );
-});
-
-MapMarkers.displayName = 'MapMarkers';
+};
 
 export default MapMarkers;

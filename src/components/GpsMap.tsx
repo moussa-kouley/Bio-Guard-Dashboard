@@ -6,6 +6,7 @@ import 'leaflet.heat';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import HeatmapLegend from './map/HeatmapLegend';
+import MapMarkers from './map/MapMarkers';
 
 const DefaultIcon = L.icon({
   iconUrl: icon,
@@ -36,31 +37,7 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
-        {data
-          .filter(entry => entry?.latitude && entry?.longitude)
-          .map((entry, index) => {
-            const position: [number, number] = [entry.latitude, entry.longitude];
-            return (
-              <Marker 
-                key={`marker-${index}`}
-                position={position}
-              >
-                <Popup>
-                  <div>
-                    <h2>Data Point</h2>
-                    <p>Latitude: {entry.latitude}</p>
-                    <p>Longitude: {entry.longitude}</p>
-                    <p>Altitude: {entry.altitude} m</p>
-                    <p>HDOP: {entry.hdop}</p>
-                    <p>Temperature: {entry.temperature} °C</p>
-                    <p>pH: {entry.ph}</p>
-                    <p>Dissolved Solids: {entry.dissolvedsolids} mg/L</p>
-                    <p>Timestamp: {entry.timestamp}</p>
-                  </div>
-                </Popup>
-              </Marker>
-            );
-          })}
+        <MapMarkers data={data} />
       </MapContainer>
       <HeatmapLegend timeframe={timeframe} />
     </div>
