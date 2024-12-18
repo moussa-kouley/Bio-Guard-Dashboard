@@ -12,7 +12,7 @@ const HeatmapLayer = ({ points, gradient }: HeatmapLayerProps) => {
   const map = useMap();
 
   useEffect(() => {
-    if (!map || !points.length) return;
+    if (!map || !points?.length) return;
 
     const heatLayer = (L as any).heatLayer(points, {
       radius: 15,

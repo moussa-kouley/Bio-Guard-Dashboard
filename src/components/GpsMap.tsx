@@ -42,12 +42,14 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
-        <HeatmapLayer
-          points={generateHeatmapPoints(timeframe)}
-          gradient={getHeatmapGradient(timeframe)}
-        />
+        {timeframe && (
+          <HeatmapLayer
+            points={generateHeatmapPoints(timeframe)}
+            gradient={getHeatmapGradient(timeframe)}
+          />
+        )}
         {Array.isArray(data) && data.map((entry, index) => {
-          if (!entry.latitude || !entry.longitude) return null;
+          if (!entry?.latitude || !entry?.longitude) return null;
           const position: [number, number] = [entry.latitude, entry.longitude];
           return (
             <Marker 
