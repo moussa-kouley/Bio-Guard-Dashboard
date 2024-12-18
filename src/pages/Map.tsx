@@ -9,7 +9,7 @@ import { MapFilters } from "@/components/map/MapFilters";
 import { LatestMeasurements } from "@/components/map/LatestMeasurements";
 import { supabase } from "@/lib/supabase";
 
-const Map: React.FC = () => {
+const Map = () => {
   const { toast } = useToast();
   const [selectedRegion, setSelectedRegion] = useState("");
   const [selectedSeverity, setSelectedSeverity] = useState("");
@@ -25,27 +25,10 @@ const Map: React.FC = () => {
     queryKey: ['gpsData', selectedTimeframe],
     queryFn: async () => {
       try {
-        let query = supabase
+        const { data, error } = await supabase
           .from('gps_data')
           .select('*')
           .order('timestamp', { ascending: false });
-
-        const now = new Date();
-        if (selectedTimeframe === "12h") {
-          const twelveHoursAgo = new Date(now.getTime() - (12 * 60 * 60 * 1000));
-          query = query.gte('timestamp', twelveHoursAgo.toISOString());
-        } else if (selectedTimeframe === "1d") {
-          const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
-          query = query.gte('timestamp', oneDayAgo.toISOString());
-        } else if (selectedTimeframe === "3d") {
-          const threeDaysAgo = new Date(now.getTime() - (3 * 24 * 60 * 60 * 1000));
-          query = query.gte('timestamp', threeDaysAgo.toISOString());
-        } else if (selectedTimeframe === "1w") {
-          const oneWeekAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
-          query = query.gte('timestamp', oneWeekAgo.toISOString());
-        }
-
-        const { data, error } = await query;
         
         if (error) {
           toast({
@@ -53,7 +36,7 @@ const Map: React.FC = () => {
             description: error.message,
             variant: "destructive",
           });
-          throw error;
+          return [];
         }
         
         return data || [];

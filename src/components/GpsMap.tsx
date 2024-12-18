@@ -25,6 +25,21 @@ interface GpsMapProps {
 const GpsMap = ({ data, timeframe }: GpsMapProps) => {
   const defaultPosition: [number, number] = [-25.7487, 27.8739];
 
+  // Create a dummy dataset if no data is available
+  const dummyData: GpsData[] = [{
+    latitude: -25.7487,
+    longitude: 27.8739,
+    altitude: 100,
+    hdop: 1.0,
+    temperature: 25,
+    ph: 7.0,
+    dissolvedsolids: 500,
+    timestamp: new Date().toISOString(),
+    f_port: 1
+  }];
+
+  const displayData = Array.isArray(data) && data.length > 0 ? data : dummyData;
+
   return (
     <div style={{ height: "100%", width: "100%" }} className="relative">
       <MapContainer
@@ -37,9 +52,7 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
-        {Array.isArray(data) && data.length > 0 && (
-          <MapContent data={data} timeframe={timeframe} />
-        )}
+        <MapContent data={displayData} timeframe={timeframe} />
       </MapContainer>
       <HeatmapLegend timeframe={timeframe} />
     </div>
