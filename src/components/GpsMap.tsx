@@ -1,3 +1,4 @@
+import React from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { useToast } from "@/components/ui/use-toast";
 import type { GpsData, TimeframeType } from '@/types/map';
@@ -26,8 +27,36 @@ interface GpsMapProps {
 }
 
 const GpsMap = ({ data, timeframe }: GpsMapProps) => {
-  const { toast } = useToast();
   const defaultPosition: [number, number] = [-25.7487, 27.8739];
+
+  const renderMarkers = () => {
+    if (!Array.isArray(data)) return null;
+    
+    return data.map((entry, index) => {
+      if (!entry?.latitude || !entry?.longitude) return null;
+      const position: [number, number] = [entry.latitude, entry.longitude];
+      return (
+        <Marker 
+          key={`marker-${index}`}
+          position={position}
+        >
+          <Popup>
+            <div>
+              <h2>Data Point</h2>
+              <p>Latitude: {entry.latitude}</p>
+              <p>Longitude: {entry.longitude}</p>
+              <p>Altitude: {entry.altitude} m</p>
+              <p>HDOP: {entry.hdop}</p>
+              <p>Temperature: {entry.temperature} °C</p>
+              <p>pH: {entry.ph}</p>
+              <p>Dissolved Solids: {entry.dissolvedsolids} mg/L</p>
+              <p>Timestamp: {entry.timestamp}</p>
+            </div>
+          </Popup>
+        </Marker>
+      );
+    });
+  };
 
   return (
     <div style={{ height: "100%", width: "100%" }} className="relative">
@@ -48,30 +77,7 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
             gradient={getHeatmapGradient(timeframe)}
           />
         )}
-        {Array.isArray(data) && data.map((entry, index) => {
-          if (!entry?.latitude || !entry?.longitude) return null;
-          const position: [number, number] = [entry.latitude, entry.longitude];
-          return (
-            <Marker 
-              key={`marker-${index}`}
-              position={position}
-            >
-              <Popup>
-                <div>
-                  <h2>Data Point</h2>
-                  <p>Latitude: {entry.latitude}</p>
-                  <p>Longitude: {entry.longitude}</p>
-                  <p>Altitude: {entry.altitude} m</p>
-                  <p>HDOP: {entry.hdop}</p>
-                  <p>Temperature: {entry.temperature} °C</p>
-                  <p>pH: {entry.ph}</p>
-                  <p>Dissolved Solids: {entry.dissolvedsolids} mg/L</p>
-                  <p>Timestamp: {entry.timestamp}</p>
-                </div>
-              </Popup>
-            </Marker>
-          );
-        })}
+        {renderMarkers()}
         <HeatmapLegend timeframe={timeframe} />
       </MapContainer>
     </div>
