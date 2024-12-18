@@ -6,7 +6,6 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet.heat';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-import MapController from './map/MapController';
 import HeatmapLayer from './map/HeatmapLayer';
 import HeatmapLegend from './map/HeatmapLegend';
 import { generateHeatmapPoints, getHeatmapGradient } from '@/utils/heatmapUtils';
@@ -25,11 +24,9 @@ interface GpsMapProps {
   timeframe: TimeframeType;
 }
 
-const GpsMap = ({ data, timeframe }: GpsMapProps) => {
-  const defaultPosition: [number, number] = [-25.7487, 27.8739];
-
+const MapView = ({ data, timeframe }: GpsMapProps) => {
   const markers = useMemo(() => {
-    if (!Array.isArray(data)) return null;
+    if (!Array.isArray(data)) return [];
     
     return data.map((entry, index) => {
       if (!entry?.latitude || !entry?.longitude) return null;
@@ -61,6 +58,27 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
   const heatmapGradient = useMemo(() => getHeatmapGradient(timeframe), [timeframe]);
 
   return (
+    <>
+      <TileLayer
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      />
+      {timeframe && (
+        <HeatmapLayer
+          points={heatmapPoints}
+          gradient={heatmapGradient}
+        />
+      )}
+      {markers}
+      <HeatmapLegend timeframe={timeframe} />
+    </>
+  );
+};
+
+const GpsMap = ({ data, timeframe }: GpsMapProps) => {
+  const defaultPosition: [number, number] = [-25.7487, 27.8739];
+
+  return (
     <div style={{ height: "100%", width: "100%" }} className="relative">
       <MapContainer
         style={{ height: "100%", width: "100%" }}
@@ -68,19 +86,7 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
         zoom={13}
         scrollWheelZoom={true}
       >
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        />
-        <MapController center={defaultPosition} zoom={13} />
-        {timeframe && (
-          <HeatmapLayer
-            points={heatmapPoints}
-            gradient={heatmapGradient}
-          />
-        )}
-        {markers}
-        <HeatmapLegend timeframe={timeframe} />
+        <MapView data={data} timeframe={timeframe} />
       </MapContainer>
     </div>
   );
