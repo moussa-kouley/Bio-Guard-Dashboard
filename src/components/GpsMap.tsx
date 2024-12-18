@@ -24,7 +24,7 @@ interface GpsMapProps {
   timeframe: TimeframeType;
 }
 
-const GpsMap = ({ data, timeframe }: GpsMapProps) => {
+const GpsMap: React.FC<GpsMapProps> = ({ data, timeframe }) => {
   const defaultPosition: [number, number] = [-25.7487, 27.8739];
   const heatmapPoints = useMemo(() => generateHeatmapPoints(timeframe), [timeframe]);
   const heatmapGradient = useMemo(() => getHeatmapGradient(timeframe), [timeframe]);

@@ -10,7 +10,7 @@ interface MapContentProps {
   heatmapGradient: Record<string, string>;
 }
 
-const MapContent = ({ data, heatmapPoints, heatmapGradient }: MapContentProps) => {
+const MapContent: React.FC<MapContentProps> = ({ data, heatmapPoints, heatmapGradient }) => {
   const markers = useMemo(() => {
     if (!Array.isArray(data)) return [];
     

@@ -8,7 +8,7 @@ interface HeatmapLayerProps {
   gradient: Record<string, string>;
 }
 
-const HeatmapLayer = ({ points, gradient }: HeatmapLayerProps) => {
+const HeatmapLayer: React.FC<HeatmapLayerProps> = ({ points, gradient }) => {
   const map = useMap();
 
   useEffect(() => {
