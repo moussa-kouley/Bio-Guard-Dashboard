@@ -1,22 +1,29 @@
 import React from 'react';
-import { Marker, Popup } from 'react-leaflet';
+import { Marker, Popup, useMap } from 'react-leaflet';
 import type { GpsData, TimeframeType } from '@/types/map';
+import HeatmapLayer from './HeatmapLayer';
+import { generateHeatmapPoints, getHeatmapGradient } from '@/utils/heatmapUtils';
 
 interface MapContentProps {
   data: GpsData[];
   timeframe: TimeframeType;
 }
 
-const MapContent: React.FC<MapContentProps> = ({ data }) => {
+const MapContent = ({ data, timeframe }: MapContentProps) => {
+  const map = useMap();
+  const points = generateHeatmapPoints(timeframe);
+  const gradient = getHeatmapGradient(timeframe);
+
   return (
     <>
+      <HeatmapLayer points={points} gradient={gradient} />
       {data.map((entry, index) => {
         if (!entry?.latitude || !entry?.longitude) return null;
         
         return (
           <Marker 
             key={`marker-${index}`}
-            position={[entry.latitude, entry.longitude] as [number, number]}
+            position={[entry.latitude, entry.longitude]}
           >
             <Popup>
               <div>
