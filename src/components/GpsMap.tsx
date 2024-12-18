@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { MapContainer, TileLayer, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap, Marker, Popup } from 'react-leaflet';
 import type { GpsData, TimeframeType } from '@/types/map';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -8,7 +8,6 @@ import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import HeatmapLegend from './map/HeatmapLegend';
 import { generateHeatmapPoints, getHeatmapGradient } from '@/utils/heatmapUtils';
-import { Marker, Popup } from 'react-leaflet';
 
 const DefaultIcon = L.icon({
   iconUrl: icon,
@@ -80,22 +79,22 @@ const MapMarkers = React.memo(({ data }: { data: GpsData[] }) => (
 
 MapMarkers.displayName = 'MapMarkers';
 
-const MapContent = React.memo(({ data, points, gradient }: { 
+const MapContent = ({ data, points, gradient }: { 
   data: GpsData[]; 
   points: [number, number, number][]; 
   gradient: Record<string, string>; 
-}) => (
-  <>
-    <TileLayer
-      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    />
-    <HeatmapLayer points={points} gradient={gradient} />
-    <MapMarkers data={data} />
-  </>
-));
-
-MapContent.displayName = 'MapContent';
+}) => {
+  return (
+    <>
+      <TileLayer
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      />
+      <HeatmapLayer points={points} gradient={gradient} />
+      <MapMarkers data={data} />
+    </>
+  );
+};
 
 const GpsMap = ({ data, timeframe }: GpsMapProps) => {
   const defaultPosition: [number, number] = [-25.7487, 27.8739];
