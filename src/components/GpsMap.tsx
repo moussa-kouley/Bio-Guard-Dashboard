@@ -1,14 +1,14 @@
 import React, { useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer } from 'react-leaflet';
 import type { GpsData, TimeframeType } from '@/types/map';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.heat';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-import HeatmapLayer from './map/HeatmapLayer';
 import HeatmapLegend from './map/HeatmapLegend';
 import { generateHeatmapPoints, getHeatmapGradient } from '@/utils/heatmapUtils';
+import MapContent from './map/MapContent';
 
 const DefaultIcon = L.icon({
   iconUrl: icon,
@@ -26,38 +26,6 @@ interface GpsMapProps {
 
 const GpsMap = ({ data, timeframe }: GpsMapProps) => {
   const defaultPosition: [number, number] = [-25.7487, 27.8739];
-
-  const markers = useMemo(() => {
-    if (!Array.isArray(data)) return [];
-    
-    return data
-      .map((entry, index) => {
-        if (!entry?.latitude || !entry?.longitude) return null;
-        const position: [number, number] = [entry.latitude, entry.longitude];
-        return (
-          <Marker 
-            key={`marker-${index}`}
-            position={position}
-          >
-            <Popup>
-              <div>
-                <h2>Data Point</h2>
-                <p>Latitude: {entry.latitude}</p>
-                <p>Longitude: {entry.longitude}</p>
-                <p>Altitude: {entry.altitude} m</p>
-                <p>HDOP: {entry.hdop}</p>
-                <p>Temperature: {entry.temperature} °C</p>
-                <p>pH: {entry.ph}</p>
-                <p>Dissolved Solids: {entry.dissolvedsolids} mg/L</p>
-                <p>Timestamp: {entry.timestamp}</p>
-              </div>
-            </Popup>
-          </Marker>
-        );
-      })
-      .filter(Boolean);
-  }, [data]);
-
   const heatmapPoints = useMemo(() => generateHeatmapPoints(timeframe), [timeframe]);
   const heatmapGradient = useMemo(() => getHeatmapGradient(timeframe), [timeframe]);
 
@@ -73,15 +41,14 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
-        {timeframe && (
-          <HeatmapLayer
-            points={heatmapPoints}
-            gradient={heatmapGradient}
-          />
-        )}
-        {markers}
-        <HeatmapLegend timeframe={timeframe} />
+        <MapContent 
+          data={data} 
+          timeframe={timeframe}
+          heatmapPoints={heatmapPoints}
+          heatmapGradient={heatmapGradient}
+        />
       </MapContainer>
+      <HeatmapLegend timeframe={timeframe} />
     </div>
   );
 };
