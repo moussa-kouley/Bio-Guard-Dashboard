@@ -24,7 +24,9 @@ interface GpsMapProps {
   timeframe: TimeframeType;
 }
 
-const MapView = ({ data, timeframe }: GpsMapProps) => {
+const GpsMap = ({ data, timeframe }: GpsMapProps) => {
+  const defaultPosition: [number, number] = [-25.7487, 27.8739];
+
   const markers = useMemo(() => {
     if (!Array.isArray(data)) return [];
     
@@ -58,27 +60,6 @@ const MapView = ({ data, timeframe }: GpsMapProps) => {
   const heatmapGradient = useMemo(() => getHeatmapGradient(timeframe), [timeframe]);
 
   return (
-    <>
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      />
-      {timeframe && (
-        <HeatmapLayer
-          points={heatmapPoints}
-          gradient={heatmapGradient}
-        />
-      )}
-      {markers}
-      <HeatmapLegend timeframe={timeframe} />
-    </>
-  );
-};
-
-const GpsMap = ({ data, timeframe }: GpsMapProps) => {
-  const defaultPosition: [number, number] = [-25.7487, 27.8739];
-
-  return (
     <div style={{ height: "100%", width: "100%" }} className="relative">
       <MapContainer
         style={{ height: "100%", width: "100%" }}
@@ -86,7 +67,18 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
         zoom={13}
         scrollWheelZoom={true}
       >
-        <MapView data={data} timeframe={timeframe} />
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
+        {timeframe && (
+          <HeatmapLayer
+            points={heatmapPoints}
+            gradient={heatmapGradient}
+          />
+        )}
+        {markers}
+        <HeatmapLegend timeframe={timeframe} />
       </MapContainer>
     </div>
   );
