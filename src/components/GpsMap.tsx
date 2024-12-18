@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer } from 'react-leaflet';
 import type { GpsData, TimeframeType } from '@/types/map';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -6,7 +6,7 @@ import 'leaflet.heat';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import HeatmapLegend from './map/HeatmapLegend';
-import MapMarkers from './map/MapMarkers';
+import MapContent from './map/MapContent';
 
 const DefaultIcon = L.icon({
   iconUrl: icon,
@@ -37,7 +37,7 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
-        <MapMarkers data={data} />
+        <MapContent data={data} timeframe={timeframe} />
       </MapContainer>
       <HeatmapLegend timeframe={timeframe} />
     </div>
