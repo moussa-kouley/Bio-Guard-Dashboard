@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Download, ThermometerSun, TrendingUp, ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { GpsData } from "@/types/gps";
 import GpsDataTable from "@/components/GpsDataTable";
+import CoveragePredictionChart from "@/components/CoveragePredictionChart";
 import React from "react";
 
 interface MetricCardsProps {
@@ -117,6 +118,43 @@ export const MetricCards = ({ latestData, data }: MetricCardsProps) => {
 
   const metrics = calculateMetrics();
 
+  // Generate sample prediction data
+  const predictionData = React.useMemo(() => {
+    const startDate = new Date('2020-01-01');
+    const data = [];
+    
+    // Generate historical data (2020-2022)
+    for (let i = 0; i < 36; i++) {
+      const date = new Date(startDate);
+      date.setMonth(date.getMonth() + i);
+      
+      const baseValue = 0.3 + Math.sin(i / 5) * 0.2 + Math.random() * 0.2;
+      data.push({
+        date: date.toISOString(),
+        historical: baseValue,
+      });
+    }
+    
+    // Generate predicted data (2023-2025)
+    for (let i = 36; i < 60; i++) {
+      const date = new Date(startDate);
+      date.setMonth(date.getMonth() + i);
+      
+      const predictedValue = 0.4 + Math.sin(i / 5) * 0.15 + Math.random() * 0.1;
+      const confidence = 0.15;
+      
+      data.push({
+        date: date.toISOString(),
+        historical: i < 48 ? 0.35 + Math.random() * 0.2 : undefined,
+        predicted: predictedValue,
+        confidenceLower: predictedValue - confidence,
+        confidenceUpper: predictedValue + confidence,
+      });
+    }
+    
+    return data;
+  }, []);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
       <div className="grid grid-cols-2 lg:grid-cols-3 col-span-1 lg:col-span-2 gap-3">
@@ -197,6 +235,13 @@ export const MetricCards = ({ latestData, data }: MetricCardsProps) => {
         <div className="overflow-hidden max-h-[250px]">
           <GpsDataTable data={data} />
         </div>
+      </Card>
+
+      <Card className="col-span-1 lg:col-span-3 p-4">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">Coverage Prediction Analysis</h2>
+        </div>
+        <CoveragePredictionChart data={predictionData} />
       </Card>
     </div>
   );
