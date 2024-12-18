@@ -1,85 +1,35 @@
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { CalendarDays, Clock } from "lucide-react";
 import { format } from "date-fns";
 import GpsMap from "@/components/GpsMap";
-import { useQuery } from '@tanstack/react-query';
 import { MapFilters } from "@/components/map/MapFilters";
 import { LatestMeasurements } from "@/components/map/LatestMeasurements";
-import { supabase } from "@/lib/supabase";
+import { useGpsData } from "@/hooks/useGpsData";
 
 const Map = () => {
   const { toast } = useToast();
   const [selectedRegion, setSelectedRegion] = useState("");
   const [selectedSeverity, setSelectedSeverity] = useState("");
   const [selectedTimeframe, setSelectedTimeframe] = useState<"current" | "12h" | "1d" | "3d" | "1w">("current");
-  const lastValidMeasurements = React.useRef({
-    temperature: null as number | null,
-    ph: null as number | null,
-    dissolvedsolids: null as number | null,
-    timestamp: null as string | null,
-  });
 
-  const { data: gpsData = [] } = useQuery({
-    queryKey: ['gpsData', selectedTimeframe],
-    queryFn: async () => {
-      try {
-        const now = new Date();
-        let query = supabase
-          .from('gps_data')
-          .select('*')
-          .order('timestamp', { ascending: false });
+  const { data: gpsData, error } = useGpsData(selectedTimeframe);
 
-        // Apply timeframe filters
-        switch (selectedTimeframe) {
-          case "12h":
-            query = query.gte('timestamp', new Date(now.getTime() - 12 * 60 * 60 * 1000).toISOString());
-            break;
-          case "1d":
-            query = query.gte('timestamp', new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString());
-            break;
-          case "3d":
-            query = query.gte('timestamp', new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString());
-            break;
-          case "1w":
-            query = query.gte('timestamp', new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString());
-            break;
-        }
+  // Show error toast if data fetching fails
+  React.useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error fetching data",
+        description: "Using fallback data for demonstration",
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
 
-        const { data, error } = await query;
-        
-        if (error) {
-          console.error('Error fetching GPS data:', error);
-          toast({
-            title: "Error fetching data",
-            description: error.message,
-            variant: "destructive",
-          });
-          return [];
-        }
-        
-        if (data && data[0]) {
-          lastValidMeasurements.current = {
-            temperature: data[0].temperature,
-            ph: data[0].ph,
-            dissolvedsolids: data[0].dissolvedsolids,
-            timestamp: data[0].timestamp,
-          };
-        }
-        
-        return data || [];
-      } catch (error) {
-        console.error('Error fetching GPS data:', error);
-        return [];
-      }
-    },
-    refetchInterval: 5000,
-  });
-
-  const handleTimeframeClick = useCallback((timeframe: "current" | "12h" | "1d" | "3d" | "1w") => {
+  const handleTimeframeClick = (timeframe: typeof selectedTimeframe) => {
     setSelectedTimeframe(timeframe);
-  }, []);
+  };
 
   return (
     <div className="p-6 mt-16">
@@ -96,7 +46,7 @@ const Map = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="md:col-span-3 space-y-6">
           <Card className="h-[600px]">
-            <GpsMap data={gpsData} timeframe={selectedTimeframe} />
+            <GpsMap data={gpsData || []} timeframe={selectedTimeframe} />
           </Card>
 
           <div className="grid grid-cols-6 gap-4">
@@ -118,7 +68,7 @@ const Map = () => {
                 className={`p-4 cursor-pointer transition-colors text-center ${
                   selectedTimeframe === timeframe ? "bg-primary text-primary-foreground" : "hover:bg-primary/10"
                 }`}
-                onClick={() => handleTimeframeClick(timeframe as "current" | "12h" | "1d" | "3d" | "1w")}
+                onClick={() => handleTimeframeClick(timeframe as typeof selectedTimeframe)}
               >
                 <span className="font-medium">
                   {timeframe === "current" ? "Current Water Hyacinth" :
@@ -130,7 +80,14 @@ const Map = () => {
         </div>
 
         <div className="space-y-4">
-          <LatestMeasurements measurements={lastValidMeasurements.current} />
+          <LatestMeasurements 
+            measurements={gpsData?.[0] ? {
+              temperature: gpsData[0].temperature,
+              ph: gpsData[0].ph,
+              dissolvedsolids: gpsData[0].dissolvedsolids,
+              timestamp: gpsData[0].timestamp,
+            } : undefined}
+          />
         </div>
       </div>
     </div>
