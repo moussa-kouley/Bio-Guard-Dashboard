@@ -25,18 +25,47 @@ const Map = () => {
     queryKey: ['gpsData', selectedTimeframe],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase
+        const now = new Date();
+        let query = supabase
           .from('gps_data')
           .select('*')
           .order('timestamp', { ascending: false });
+
+        // Apply timeframe filters
+        switch (selectedTimeframe) {
+          case "12h":
+            query = query.gte('timestamp', new Date(now.getTime() - 12 * 60 * 60 * 1000).toISOString());
+            break;
+          case "1d":
+            query = query.gte('timestamp', new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString());
+            break;
+          case "3d":
+            query = query.gte('timestamp', new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString());
+            break;
+          case "1w":
+            query = query.gte('timestamp', new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString());
+            break;
+        }
+
+        const { data, error } = await query;
         
         if (error) {
+          console.error('Error fetching GPS data:', error);
           toast({
             title: "Error fetching data",
             description: error.message,
             variant: "destructive",
           });
           return [];
+        }
+        
+        if (data && data[0]) {
+          lastValidMeasurements.current = {
+            temperature: data[0].temperature,
+            ph: data[0].ph,
+            dissolvedsolids: data[0].dissolvedsolids,
+            timestamp: data[0].timestamp,
+          };
         }
         
         return data || [];
@@ -47,18 +76,6 @@ const Map = () => {
     },
     refetchInterval: 5000,
   });
-
-  React.useEffect(() => {
-    if (gpsData && gpsData[0]) {
-      const latestData = gpsData[0];
-      lastValidMeasurements.current = {
-        temperature: typeof latestData.temperature === 'number' ? latestData.temperature : null,
-        ph: typeof latestData.ph === 'number' ? latestData.ph : null,
-        dissolvedsolids: typeof latestData.dissolvedsolids === 'number' ? latestData.dissolvedsolids : null,
-        timestamp: latestData.timestamp,
-      };
-    }
-  }, [gpsData]);
 
   const handleTimeframeClick = useCallback((timeframe: "current" | "12h" | "1d" | "3d" | "1w") => {
     setSelectedTimeframe(timeframe);
@@ -79,7 +96,7 @@ const Map = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="md:col-span-3 space-y-6">
           <Card className="h-[600px]">
-            <GpsMap data={gpsData || []} timeframe={selectedTimeframe} />
+            <GpsMap data={gpsData} timeframe={selectedTimeframe} />
           </Card>
 
           <div className="grid grid-cols-6 gap-4">
