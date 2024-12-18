@@ -12,30 +12,34 @@ export interface GpsData {
   f_port?: number;
 }
 
-// Add Leaflet types
-declare module 'leaflet.heat' {
-  import * as L from 'leaflet';
-  
-  declare module 'leaflet' {
-    namespace HeatLayer {
-      interface HeatLayerOptions extends L.LayerOptions {
-        minOpacity?: number;
-        maxZoom?: number;
-        max?: number;
-        radius?: number;
-        blur?: number;
-        gradient?: { [key: number]: string };
-      }
-    }
-    
-    class HeatLayer extends L.Layer {
-      constructor(latlngs: L.LatLngExpression[], options?: HeatLayer.HeatLayerOptions);
-      setLatLngs(latlngs: L.LatLngExpression[]): this;
-      addLatLng(latlng: L.LatLngExpression): this;
-      setOptions(options: HeatLayer.HeatLayerOptions): this;
-      redraw(): this;
-    }
-    
-    function heatLayer(latlngs: L.LatLngExpression[], options?: HeatLayer.HeatLayerOptions): HeatLayer;
+// Extend the window interface to include HeatLayer
+declare global {
+  interface Window {
+    L: typeof import('leaflet');
   }
+}
+
+// Extend Leaflet types
+declare module 'leaflet' {
+  export interface HeatLayerOptions extends L.LayerOptions {
+    minOpacity?: number;
+    maxZoom?: number;
+    max?: number;
+    radius?: number;
+    blur?: number;
+    gradient?: { [key: number]: string };
+  }
+
+  export class HeatLayer extends Layer {
+    constructor(latlngs: LatLngExpression[], options?: HeatLayerOptions);
+    setLatLngs(latlngs: LatLngExpression[]): this;
+    addLatLng(latlng: LatLngExpression): this;
+    setOptions(options: HeatLayerOptions): this;
+    redraw(): this;
+  }
+
+  export function heatLayer(
+    latlngs: LatLngExpression[],
+    options?: HeatLayerOptions
+  ): HeatLayer;
 }

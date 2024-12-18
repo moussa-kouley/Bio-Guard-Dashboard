@@ -33,7 +33,7 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
     <div style={{ height: "100%", width: "100%" }} className="relative">
       <MapContainer
         style={{ height: "100%", width: "100%" }}
-        center={defaultPosition}
+        center={defaultPosition as L.LatLngExpression}
         zoom={13}
         scrollWheelZoom={false}
       >
