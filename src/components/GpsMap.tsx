@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { useToast } from "@/components/ui/use-toast";
 import type { GpsData, TimeframeType } from '@/types/map';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -12,7 +11,7 @@ import HeatmapLayer from './map/HeatmapLayer';
 import HeatmapLegend from './map/HeatmapLegend';
 import { generateHeatmapPoints, getHeatmapGradient } from '@/utils/heatmapUtils';
 
-let DefaultIcon = L.icon({
+const DefaultIcon = L.icon({
   iconUrl: icon,
   shadowUrl: iconShadow,
   iconSize: [25, 41],
@@ -29,7 +28,7 @@ interface GpsMapProps {
 const GpsMap = ({ data, timeframe }: GpsMapProps) => {
   const defaultPosition: [number, number] = [-25.7487, 27.8739];
 
-  const renderMarkers = () => {
+  const markers = useMemo(() => {
     if (!Array.isArray(data)) return null;
     
     return data.map((entry, index) => {
@@ -56,7 +55,10 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
         </Marker>
       );
     });
-  };
+  }, [data]);
+
+  const heatmapPoints = useMemo(() => generateHeatmapPoints(timeframe), [timeframe]);
+  const heatmapGradient = useMemo(() => getHeatmapGradient(timeframe), [timeframe]);
 
   return (
     <div style={{ height: "100%", width: "100%" }} className="relative">
@@ -73,11 +75,11 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
         />
         {timeframe && (
           <HeatmapLayer
-            points={generateHeatmapPoints(timeframe)}
-            gradient={getHeatmapGradient(timeframe)}
+            points={heatmapPoints}
+            gradient={heatmapGradient}
           />
         )}
-        {renderMarkers()}
+        {markers}
         <HeatmapLegend timeframe={timeframe} />
       </MapContainer>
     </div>
