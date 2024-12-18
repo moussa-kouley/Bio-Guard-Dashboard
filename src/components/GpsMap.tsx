@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import type { GpsData, TimeframeType } from '@/types/map';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -6,8 +6,6 @@ import 'leaflet.heat';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import HeatmapLegend from './map/HeatmapLegend';
-import { generateHeatmapPoints, getHeatmapGradient } from '@/utils/heatmapUtils';
-import { Marker, Popup } from 'react-leaflet';
 
 const DefaultIcon = L.icon({
   iconUrl: icon,
@@ -25,8 +23,6 @@ interface GpsMapProps {
 
 const GpsMap = ({ data, timeframe }: GpsMapProps) => {
   const defaultPosition: [number, number] = [-25.7487, 27.8739];
-  const heatmapPoints = generateHeatmapPoints(timeframe);
-  const heatmapGradient = getHeatmapGradient(timeframe);
 
   return (
     <div style={{ height: "100%", width: "100%" }} className="relative">
