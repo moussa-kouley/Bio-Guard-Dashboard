@@ -29,6 +29,7 @@
     "autoprefixer": "^10.4.20",
     "leaflet": "^1.9.4",
     "leaflet.heat": "^0.2.0",
+    "lucide-react": "^0.468.0",
     "npyjs": "^0.6.0",
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.0.2",

@@ -25,9 +25,7 @@ const HeatmapLayer = ({ points, gradient }: HeatmapLayerProps) => {
     map.addLayer(heatLayer);
     
     return () => {
-      if (map && heatLayer) {
-        map.removeLayer(heatLayer);
-      }
+      map.removeLayer(heatLayer);
     };
   }, [map, points, gradient]);
 
