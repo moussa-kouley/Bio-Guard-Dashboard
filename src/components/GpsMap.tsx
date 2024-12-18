@@ -35,7 +35,7 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
         style={{ height: "100%", width: "100%" }}
         center={defaultPosition}
         zoom={13}
-        scrollWheelZoom={false}
+        scrollWheelZoom={true}
       >
         <MapController center={defaultPosition} zoom={13} />
         <TileLayer
