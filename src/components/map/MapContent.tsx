@@ -43,12 +43,10 @@ const MapContent = ({ data, timeframe, heatmapPoints, heatmapGradient }: MapCont
 
   return (
     <>
-      {timeframe && (
-        <HeatmapLayer
-          points={heatmapPoints}
-          gradient={heatmapGradient}
-        />
-      )}
+      <HeatmapLayer
+        points={heatmapPoints}
+        gradient={heatmapGradient}
+      />
       {markers}
     </>
   );
