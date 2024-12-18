@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, memo } from 'react';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet.heat';
@@ -8,13 +8,18 @@ interface HeatmapLayerProps {
   gradient: Record<string, string>;
 }
 
-const HeatmapLayer = ({ points, gradient }: HeatmapLayerProps) => {
+const HeatmapLayer = memo(({ points, gradient }: HeatmapLayerProps) => {
   const map = useMap();
+  const heatLayerRef = useRef<any>(null);
 
   useEffect(() => {
     if (!map || !points?.length) return;
 
-    const heatLayer = (L as any).heatLayer(points, {
+    if (heatLayerRef.current) {
+      map.removeLayer(heatLayerRef.current);
+    }
+
+    heatLayerRef.current = (L as any).heatLayer(points, {
       radius: 15,
       blur: 10,
       maxZoom: 20,
@@ -22,14 +27,18 @@ const HeatmapLayer = ({ points, gradient }: HeatmapLayerProps) => {
       minOpacity: 0.3
     });
 
-    map.addLayer(heatLayer);
+    map.addLayer(heatLayerRef.current);
     
     return () => {
-      map.removeLayer(heatLayer);
+      if (heatLayerRef.current) {
+        map.removeLayer(heatLayerRef.current);
+      }
     };
   }, [map, points, gradient]);
 
   return null;
-};
+});
+
+HeatmapLayer.displayName = 'HeatmapLayer';
 
 export default HeatmapLayer;

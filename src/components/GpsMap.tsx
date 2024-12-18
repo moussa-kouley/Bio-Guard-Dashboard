@@ -7,6 +7,7 @@ import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import HeatmapLegend from './map/HeatmapLegend';
 import MapContent from './map/MapContent';
+import { memo } from 'react';
 
 // Set up default marker icon
 const DefaultIcon = L.icon({
@@ -23,7 +24,7 @@ interface GpsMapProps {
   timeframe: TimeframeType;
 }
 
-const GpsMap: React.FC<GpsMapProps> = ({ data, timeframe }) => {
+const GpsMap = memo(({ data, timeframe }: GpsMapProps) => {
   const defaultPosition: [number, number] = [-25.7487, 27.8739];
 
   return (
@@ -35,14 +36,16 @@ const GpsMap: React.FC<GpsMapProps> = ({ data, timeframe }) => {
         scrollWheelZoom={true}
       >
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <MapContent data={data} timeframe={timeframe} />
       </MapContainer>
       <HeatmapLegend timeframe={timeframe} />
     </div>
   );
-};
+});
+
+GpsMap.displayName = 'GpsMap';
 
 export default GpsMap;

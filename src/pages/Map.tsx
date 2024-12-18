@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { CalendarDays, Clock } from "lucide-react";
@@ -7,16 +7,16 @@ import GpsMap from "@/components/GpsMap";
 import { MapFilters } from "@/components/map/MapFilters";
 import { LatestMeasurements } from "@/components/map/LatestMeasurements";
 import { useGpsData } from "@/hooks/useGpsData";
+import type { TimeframeType } from "@/types/map";
 
 const Map = () => {
   const { toast } = useToast();
   const [selectedRegion, setSelectedRegion] = useState("");
   const [selectedSeverity, setSelectedSeverity] = useState("");
-  const [selectedTimeframe, setSelectedTimeframe] = useState<"current" | "12h" | "1d" | "3d" | "1w">("current");
+  const [selectedTimeframe, setSelectedTimeframe] = useState<TimeframeType>("current");
 
   const { data: gpsData, error } = useGpsData(selectedTimeframe);
 
-  // Show error toast if data fetching fails
   React.useEffect(() => {
     if (error) {
       toast({
@@ -27,9 +27,17 @@ const Map = () => {
     }
   }, [error, toast]);
 
-  const handleTimeframeClick = (timeframe: typeof selectedTimeframe) => {
+  const handleTimeframeClick = useCallback((timeframe: TimeframeType) => {
     setSelectedTimeframe(timeframe);
-  };
+  }, []);
+
+  const handleRegionChange = useCallback((value: string) => {
+    setSelectedRegion(value);
+  }, []);
+
+  const handleSeverityChange = useCallback((value: string) => {
+    setSelectedSeverity(value);
+  }, []);
 
   return (
     <div className="p-6 mt-16">
@@ -38,8 +46,8 @@ const Map = () => {
         <MapFilters
           selectedRegion={selectedRegion}
           selectedSeverity={selectedSeverity}
-          onRegionChange={setSelectedRegion}
-          onSeverityChange={setSelectedSeverity}
+          onRegionChange={handleRegionChange}
+          onSeverityChange={handleSeverityChange}
         />
       </div>
 
@@ -68,7 +76,7 @@ const Map = () => {
                 className={`p-4 cursor-pointer transition-colors text-center ${
                   selectedTimeframe === timeframe ? "bg-primary text-primary-foreground" : "hover:bg-primary/10"
                 }`}
-                onClick={() => handleTimeframeClick(timeframe as typeof selectedTimeframe)}
+                onClick={() => handleTimeframeClick(timeframe as TimeframeType)}
               >
                 <span className="font-medium">
                   {timeframe === "current" ? "Current Water Hyacinth" :
