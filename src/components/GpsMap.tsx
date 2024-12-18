@@ -33,7 +33,7 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
     <div style={{ height: "100%", width: "100%" }} className="relative">
       <MapContainer
         style={{ height: "100%", width: "100%" }}
-        center={defaultPosition as L.LatLngExpression}
+        center={defaultPosition}
         zoom={13}
         scrollWheelZoom={false}
       >
@@ -46,7 +46,7 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
           points={generateHeatmapPoints(timeframe)}
           gradient={getHeatmapGradient(timeframe)}
         />
-        {data && data.length > 0 && data.map((entry, index) => {
+        {data?.map((entry, index) => {
           if (!entry.latitude || !entry.longitude) return null;
           const position: [number, number] = [entry.latitude, entry.longitude];
           return (
