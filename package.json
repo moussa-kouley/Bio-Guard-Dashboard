@@ -20,6 +20,10 @@
     "@radix-ui/react-checkbox": "^1.1.1",
     "@radix-ui/react-collapsible": "^1.1.0",
     "@radix-ui/react-context-menu": "^2.2.1",
-    "@radix-ui/react-dialog": "^1.1.1"
+    "@radix-ui/react-dialog": "^1.1.1",
+    "@supabase/supabase-js": "^2.47.9",
+    "leaflet": "^1.9.4",
+    "leaflet.heat": "^0.2.0",
+    "react-leaflet": "^5.0.0"
   }
 }
