@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { MapContainer, TileLayer, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap, Marker, Popup } from 'react-leaflet';
 import type { GpsData, TimeframeType } from '@/types/map';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -8,7 +8,6 @@ import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import HeatmapLegend from './map/HeatmapLegend';
 import { generateHeatmapPoints, getHeatmapGradient } from '@/utils/heatmapUtils';
-import { Marker, Popup } from 'react-leaflet';
 
 const DefaultIcon = L.icon({
   iconUrl: icon,
@@ -24,7 +23,6 @@ interface GpsMapProps {
   timeframe: TimeframeType;
 }
 
-// Separate component for the heatmap layer
 const HeatmapLayer = ({ points, gradient }: { points: [number, number, number][]; gradient: Record<string, string> }) => {
   const map = useMap();
 
@@ -49,11 +47,10 @@ const HeatmapLayer = ({ points, gradient }: { points: [number, number, number][]
   return null;
 };
 
-// Main map content component
-const MapContent = ({ data, heatmapPoints, heatmapGradient }: { 
+const MapContent = ({ data, points, gradient }: { 
   data: GpsData[]; 
-  heatmapPoints: [number, number, number][]; 
-  heatmapGradient: Record<string, string>; 
+  points: [number, number, number][]; 
+  gradient: Record<string, string>; 
 }) => {
   const markers = useMemo(() => {
     if (!Array.isArray(data)) return [];
@@ -91,7 +88,7 @@ const MapContent = ({ data, heatmapPoints, heatmapGradient }: {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
-      <HeatmapLayer points={heatmapPoints} gradient={heatmapGradient} />
+      <HeatmapLayer points={points} gradient={gradient} />
       {markers}
     </>
   );
@@ -112,8 +109,8 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
       >
         <MapContent 
           data={data}
-          heatmapPoints={heatmapPoints}
-          heatmapGradient={heatmapGradient}
+          points={heatmapPoints}
+          gradient={heatmapGradient}
         />
       </MapContainer>
       <HeatmapLegend timeframe={timeframe} />
