@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react';
-import { Marker, Popup } from 'react-leaflet';
+import { Marker, Popup, useMap } from 'react-leaflet';
 import type { GpsData, TimeframeType } from '@/types/map';
 import HeatmapLayer from './HeatmapLayer';
 import { generateHeatmapPoints, getHeatmapGradient } from '@/utils/heatmapUtils';
@@ -10,6 +10,7 @@ interface MapContentProps {
 }
 
 const MapContent = memo(({ data, timeframe }: MapContentProps) => {
+  const map = useMap();
   const points = useMemo(() => generateHeatmapPoints(timeframe), [timeframe]);
   const gradient = useMemo(() => getHeatmapGradient(timeframe), [timeframe]);
 
@@ -39,7 +40,7 @@ const MapContent = memo(({ data, timeframe }: MapContentProps) => {
           </Popup>
         </Marker>
       );
-    });
+    }).filter(Boolean);
   }, [data]);
 
   return (

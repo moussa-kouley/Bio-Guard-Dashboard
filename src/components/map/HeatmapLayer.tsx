@@ -30,7 +30,7 @@ const HeatmapLayer = memo(({ points, gradient }: HeatmapLayerProps) => {
     map.addLayer(heatLayerRef.current);
     
     return () => {
-      if (heatLayerRef.current) {
+      if (heatLayerRef.current && map) {
         map.removeLayer(heatLayerRef.current);
       }
     };
