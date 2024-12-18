@@ -48,54 +48,54 @@ const HeatmapLayer = ({ points, gradient }: { points: [number, number, number][]
   return null;
 };
 
-const Markers = ({ data }: { data: GpsData[] }) => {
-  return (
-    <>
-      {data
-        .filter(entry => entry?.latitude && entry?.longitude)
-        .map((entry, index) => {
-          const position: [number, number] = [entry.latitude, entry.longitude];
-          return (
-            <Marker 
-              key={`marker-${index}`}
-              position={position}
-            >
-              <Popup>
-                <div>
-                  <h2>Data Point</h2>
-                  <p>Latitude: {entry.latitude}</p>
-                  <p>Longitude: {entry.longitude}</p>
-                  <p>Altitude: {entry.altitude} m</p>
-                  <p>HDOP: {entry.hdop}</p>
-                  <p>Temperature: {entry.temperature} °C</p>
-                  <p>pH: {entry.ph}</p>
-                  <p>Dissolved Solids: {entry.dissolvedsolids} mg/L</p>
-                  <p>Timestamp: {entry.timestamp}</p>
-                </div>
-              </Popup>
-            </Marker>
-          );
-        })}
-    </>
-  );
-};
+const MapMarkers = React.memo(({ data }: { data: GpsData[] }) => (
+  <>
+    {data
+      .filter(entry => entry?.latitude && entry?.longitude)
+      .map((entry, index) => {
+        const position: [number, number] = [entry.latitude, entry.longitude];
+        return (
+          <Marker 
+            key={`marker-${index}`}
+            position={position}
+          >
+            <Popup>
+              <div>
+                <h2>Data Point</h2>
+                <p>Latitude: {entry.latitude}</p>
+                <p>Longitude: {entry.longitude}</p>
+                <p>Altitude: {entry.altitude} m</p>
+                <p>HDOP: {entry.hdop}</p>
+                <p>Temperature: {entry.temperature} °C</p>
+                <p>pH: {entry.ph}</p>
+                <p>Dissolved Solids: {entry.dissolvedsolids} mg/L</p>
+                <p>Timestamp: {entry.timestamp}</p>
+              </div>
+            </Popup>
+          </Marker>
+        );
+      })}
+  </>
+));
 
-const MapContent = ({ data, points, gradient }: { 
+MapMarkers.displayName = 'MapMarkers';
+
+const MapContent = React.memo(({ data, points, gradient }: { 
   data: GpsData[]; 
   points: [number, number, number][]; 
   gradient: Record<string, string>; 
-}) => {
-  return (
-    <>
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      />
-      <HeatmapLayer points={points} gradient={gradient} />
-      <Markers data={data} />
-    </>
-  );
-};
+}) => (
+  <>
+    <TileLayer
+      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    />
+    <HeatmapLayer points={points} gradient={gradient} />
+    <MapMarkers data={data} />
+  </>
+));
+
+MapContent.displayName = 'MapContent';
 
 const GpsMap = ({ data, timeframe }: GpsMapProps) => {
   const defaultPosition: [number, number] = [-25.7487, 27.8739];
