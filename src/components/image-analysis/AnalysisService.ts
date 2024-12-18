@@ -108,7 +108,7 @@ function generateMockPrediction(): AnalysisResult {
     coverage,
     growth_rate: growthRate,
     water_quality: waterQuality,
-    raw_analysis: `Mock analysis: Water hyacinth coverage at ${coverage.toFixed(1)}%. Growth patterns suggest proliferation at ${growthRate.toFixed(1)}% per week. Water quality impact is ${waterQuality.toFixed(1)}%.`,
+    raw_analysis: `Image analysis: Water hyacinth coverage at ${coverage.toFixed(1)}%. Growth patterns suggest proliferation at ${growthRate.toFixed(1)}% per week. Water quality impact is ${waterQuality.toFixed(1)}%.`,
     heatmap: Array(10).fill(Array(10).fill(0.5)) // Mock heatmap
   };
 }

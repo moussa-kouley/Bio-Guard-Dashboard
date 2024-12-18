@@ -1,116 +1,158 @@
 import React, { useState, useRef } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import { Button } from '../ui/button';
+import { analyzeNpyWithModel } from './AnalysisService';
+import { toast } from '../ui/use-toast';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+
+export interface AnalysisResult {
+  tensorflowAnalysis?: {
+    coverage: number;
+    growth_rate: number;
+    water_quality: number;
+    raw_analysis: string;
+    heatmap?: number[][];
+  };
+}
 
 export const ImageUploader: React.FC = () => {
-  const [inputFile, setInputFile] = useState<File | null>(null);
-  const [metadataFile, setMetadataFile] = useState<File | null>(null);
-  const [predictionResult, setPredictionResult] = useState<string | null>(null);
-  const inputFileRef = useRef<HTMLInputElement>(null);
-  const metadataFileRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleInputFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setInputFile(file);
+    if (file && file.type.startsWith('image/')) {
+      setSelectedFile(file);
+    } else {
+      toast({
+        title: "Invalid File",
+        description: "Please upload a valid image file",
+        variant: "destructive"
+      });
     }
   };
 
-  const handleMetadataFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setMetadataFile(file);
-    }
+  const preprocessImage = async (imageFile: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const img = new Image();
+          img.onload = async () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 224;
+            canvas.height = 224;
+            const ctx = canvas.getContext('2d');
+            
+            if (!ctx) {
+              throw new Error('Could not create canvas context');
+            }
+            
+            ctx.drawImage(img, 0, 0, 224, 224);
+            
+            const tensor = tf.browser.fromPixels(canvas)
+              .toFloat()
+              .div(tf.scalar(255))
+              .reshape([1, 224, 224, 3]);
+            
+            const npyFile = await convertTensorToNpy(tensor);
+            resolve(npyFile);
+          };
+          
+          img.onerror = () => reject(new Error('Failed to load image'));
+          img.src = event.target?.result as string;
+        } catch (error) {
+          reject(error);
+        }
+      };
+      reader.onerror = () => reject(new Error('File reading failed'));
+      reader.readAsDataURL(imageFile);
+    });
+  };
+
+  const convertTensorToNpy = async (tensor: tf.Tensor): Promise<File> => {
+    const data = await tensor.data();
+    const blob = new Blob([new Float32Array(data)], { type: 'application/octet-stream' });
+    return new File([blob], 'input_data.npy', { type: 'application/octet-stream' });
   };
 
   const handleUploadAndPredict = async () => {
-    if (!inputFile || !metadataFile) {
-      alert('Please select both input and metadata files');
+    if (!selectedFile) {
+      toast({
+        title: "No File Selected",
+        description: "Please select an image to analyze",
+        variant: "destructive"
+      });
       return;
     }
 
-    try {
-      // Read input file as ArrayBuffer
-      const inputArrayBuffer = await inputFile.arrayBuffer();
-      const metadataArrayBuffer = await metadataFile.arrayBuffer();
-
-      // Save files to public directory
-      await saveFileToPublic(inputFile, 'input_data.npy');
-      await saveFileToPublic(metadataFile, 'metadata.npy');
-
-      // Load the Keras model
-      const model = await tf.loadLayersModel('/ai-model/saved_model/model.json');
-
-      // Prepare input data (you may need to adjust based on your specific model)
-      const inputTensor = tf.tensor(new Float32Array(inputArrayBuffer));
-      
-      // Make prediction
-      const prediction = model.predict(inputTensor) as tf.Tensor;
-      const predictionArray = await prediction.array();
-
-      // Process and display prediction
-      setPredictionResult(JSON.stringify(predictionArray));
-    } catch (error) {
-      console.error('Prediction error:', error);
-      alert('Failed to process files or make prediction');
-    }
-  };
-
-  // Helper function to save uploaded file to public directory
-  const saveFileToPublic = async (file: File, filename: string) => {
-    const formData = new FormData();
-    formData.append('file', file, filename);
+    setIsProcessing(true);
+    setAnalysisResult(null);
 
     try {
-      const response = await fetch('/upload', {
-        method: 'POST',
-        body: formData
+      // Preprocess for TensorFlow model
+      const npyFile = await preprocessImage(selectedFile);
+      const tensorflowAnalysis = await analyzeNpyWithModel(npyFile);
+
+      const result: AnalysisResult = {
+        tensorflowAnalysis,
+      };
+
+      setAnalysisResult(result);
+
+      toast({
+        title: "Analysis Complete",
+        description: `TensorFlow Coverage: ${tensorflowAnalysis.coverage.toFixed(2)}%`,
+        variant: "default"
       });
 
-      if (!response.ok) {
-        throw new Error('File upload failed');
-      }
+      console.log('Full Analysis Result:', result);
     } catch (error) {
-      console.error('File save error:', error);
-      throw error;
+      console.error('Prediction error:', error);
+      toast({
+        title: "Analysis Failed",
+        description: "Unable to process the image. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   return (
     <div className="flex flex-col space-y-4">
       <div>
-        <label className="block mb-2">Upload Input Data (.npy)</label>
+        <label className="block mb-2">Upload Water Hyacinth Image</label>
         <input 
           type="file" 
-          ref={inputFileRef}
-          accept=".npy" 
-          onChange={handleInputFileChange} 
-          className="mb-2"
-        />
-      </div>
-
-      <div>
-        <label className="block mb-2">Upload Metadata (.npy)</label>
-        <input 
-          type="file" 
-          ref={metadataFileRef}
-          accept=".npy" 
-          onChange={handleMetadataFileChange} 
+          ref={fileInputRef}
+          accept="image/*" 
+          onChange={handleFileChange} 
           className="mb-2"
         />
       </div>
 
       <Button 
         onClick={handleUploadAndPredict}
-        disabled={!inputFile || !metadataFile}
+        disabled={!selectedFile || isProcessing}
       >
-        Upload and Predict
+        {isProcessing ? 'Processing...' : 'Analyze Image'}
       </Button>
 
-      {predictionResult && (
+      {analysisResult && analysisResult.tensorflowAnalysis && (
         <div className="mt-4">
-          <h3 className="font-bold">Prediction Result:</h3>
-          <pre className="bg-gray-100 p-2 rounded">{predictionResult}</pre>
+          <Card>
+            <CardHeader>
+              <CardTitle>TensorFlow Analysis</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <pre className="text-sm overflow-auto max-h-64">
+                {JSON.stringify(analysisResult.tensorflowAnalysis, null, 2)}
+              </pre>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>

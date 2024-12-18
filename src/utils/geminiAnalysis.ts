@@ -1,23 +1,25 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// In Vite, we use import.meta.env instead of process.env
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '');
+// Validate and retrieve Gemini API key
+function getGeminiApiKey(): string {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  
+  if (!apiKey) {
+    console.error('Gemini API Key is missing. Please set VITE_GEMINI_API_KEY in your .env file.');
+    throw new Error('Missing Gemini API Key');
+  }
 
-export async function analyzeWaterHyacinthImage(imageUrl: string): Promise<string> {
+  return apiKey;
+}
+
+export async function analyzeWaterHyacinthImage(base64Image: string, mimeType: string): Promise<string> {
   try {
+    // Validate API key first
+    const apiKey = getGeminiApiKey();
+    const genAI = new GoogleGenerativeAI(apiKey);
+    
     const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
     
-    // Fetch the image and convert it to base64
-    const fetchResponse = await fetch(imageUrl);
-    const imageBlob = await fetchResponse.blob();
-    
-    // Convert Blob to base64
-    const base64data = await new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.readAsDataURL(imageBlob);
-    });
-
     const prompt = `Analyze this water hyacinth distribution map image. Focus on:
 1. Coverage patterns and density
 2. Potential environmental impact
@@ -29,16 +31,32 @@ Please provide a detailed but concise analysis.`;
       prompt,
       {
         inlineData: {
-          mimeType: "image/png",
-          data: base64data as string
+          mimeType: mimeType,
+          data: base64Image
         }
       }
     ]);
 
     const geminiResponse = await result.response;
-    return geminiResponse.text();
+    const analysisText = geminiResponse.text();
+
+    if (!analysisText) {
+      throw new Error('Gemini returned an empty analysis');
+    }
+
+    return analysisText;
   } catch (error) {
-    console.error('Error analyzing image:', error);
+    console.error('Detailed Gemini Analysis Error:', error);
+    
+    if (error instanceof Error) {
+      if (error.message.includes('API_KEY')) {
+        return "API configuration error. Please check your Gemini API key.";
+      }
+      if (error.message.includes('fetch')) {
+        return "Unable to download image. Please check the image URL.";
+      }
+    }
+    
     return "Unable to analyze image at this time. Please try again later.";
   }
 }
