@@ -7,8 +7,8 @@ export async function analyzeWaterHyacinthImage(imageUrl: string): Promise<strin
     const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
     
     // Fetch the image and convert it to base64
-    const response = await fetch(imageUrl);
-    const imageBlob = await response.blob();
+    const fetchResponse = await fetch(imageUrl);
+    const imageBlob = await fetchResponse.blob();
     
     // Convert Blob to base64
     const base64data = await new Promise((resolve) => {
@@ -34,8 +34,8 @@ Please provide a detailed but concise analysis.`;
       }
     ]);
 
-    const response = await result.response;
-    return response.text();
+    const geminiResponse = await result.response;
+    return geminiResponse.text();
   } catch (error) {
     console.error('Error analyzing image:', error);
     return "Unable to analyze image at this time. Please try again later.";
