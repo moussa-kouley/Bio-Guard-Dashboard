@@ -7,12 +7,13 @@ interface MapContentProps {
   timeframe: TimeframeType;
 }
 
-const MapContent = ({ data }: MapContentProps) => {
+const MapContent: React.FC<MapContentProps> = ({ data }) => {
   return (
     <>
-      {data && data
-        .filter(entry => entry?.latitude && entry?.longitude)
-        .map((entry, index) => (
+      {data.map((entry, index) => {
+        if (!entry?.latitude || !entry?.longitude) return null;
+        
+        return (
           <Marker 
             key={`marker-${index}`}
             position={[entry.latitude, entry.longitude] as [number, number]}
@@ -31,7 +32,8 @@ const MapContent = ({ data }: MapContentProps) => {
               </div>
             </Popup>
           </Marker>
-        ))}
+        );
+      })}
     </>
   );
 };

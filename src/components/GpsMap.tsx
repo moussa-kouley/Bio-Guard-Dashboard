@@ -37,7 +37,9 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
-        {data && <MapContent data={data} timeframe={timeframe} />}
+        {Array.isArray(data) && data.length > 0 && (
+          <MapContent data={data} timeframe={timeframe} />
+        )}
       </MapContainer>
       <HeatmapLegend timeframe={timeframe} />
     </div>
