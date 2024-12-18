@@ -4,6 +4,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { analyzeNpyWithModel, saveAnalysisToDatabase, type AnalysisResult } from './image-analysis/AnalysisService';
+import ImageAnalysisResult from './image-analysis/ImageAnalysisResult';
+import { analyzeWaterHyacinthImage } from '@/utils/geminiAnalysis';
 
 const ImagePrediction = () => {
   const [inputFile, setInputFile] = useState<File | null>(null);
@@ -11,6 +13,9 @@ const ImagePrediction = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [analysisStage, setAnalysisStage] = useState<string>('');
   const [predictionResult, setPredictionResult] = useState<AnalysisResult | null>(null);
+  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const predictedImageUrl = '/lovable-uploads/d7434c85-e91a-4f26-a6fc-227befe8af1a.png';
   const { toast } = useToast();
 
   const handleInputFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,6 +76,7 @@ const ImagePrediction = () => {
     setIsLoading(true);
     setPredictionResult(null);
     setAnalysisStage("Initializing analysis...");
+    setIsAnalyzing(true);
 
     try {
       await simulateAnalysisStages();
@@ -79,6 +85,10 @@ const ImagePrediction = () => {
       if (!prediction) {
         throw new Error("Analysis failed");
       }
+
+      // Get AI analysis of the predicted image
+      const analysis = await analyzeWaterHyacinthImage(predictedImageUrl);
+      setAiAnalysis(analysis);
 
       await saveAnalysisToDatabase(prediction);
       setPredictionResult(prediction);
@@ -97,6 +107,7 @@ const ImagePrediction = () => {
     } finally {
       setIsLoading(false);
       setAnalysisStage('');
+      setIsAnalyzing(false);
     }
   };
 
@@ -150,29 +161,37 @@ const ImagePrediction = () => {
       </Card>
 
       {predictionResult && (
-        <Card className="p-6">
-          <h3 className="text-xl font-semibold mb-4">Analysis Results</h3>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm font-medium text-gray-500">Coverage</p>
-                <p className="text-2xl font-semibold">{predictionResult.coverage.toFixed(1)}%</p>
+        <>
+          <Card className="p-6">
+            <h3 className="text-xl font-semibold mb-4">Analysis Results</h3>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm font-medium text-gray-500">Coverage</p>
+                  <p className="text-2xl font-semibold">{predictionResult.coverage.toFixed(1)}%</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm font-medium text-gray-500">Growth Rate</p>
+                  <p className="text-2xl font-semibold">{predictionResult.growth_rate.toFixed(1)}%</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm font-medium text-gray-500">Water Quality</p>
+                  <p className="text-2xl font-semibold">{predictionResult.water_quality.toFixed(1)}%</p>
+                </div>
               </div>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm font-medium text-gray-500">Growth Rate</p>
-                <p className="text-2xl font-semibold">{predictionResult.growth_rate.toFixed(1)}%</p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm font-medium text-gray-500">Water Quality</p>
-                <p className="text-2xl font-semibold">{predictionResult.water_quality.toFixed(1)}%</p>
+              <div className="mt-4">
+                <h4 className="font-medium mb-2">Analysis Summary</h4>
+                <p className="text-gray-600">{predictionResult.raw_analysis}</p>
               </div>
             </div>
-            <div className="mt-4">
-              <h4 className="font-medium mb-2">Analysis Summary</h4>
-              <p className="text-gray-600">{predictionResult.raw_analysis}</p>
-            </div>
-          </div>
-        </Card>
+          </Card>
+          
+          <ImageAnalysisResult
+            imageUrl={predictedImageUrl}
+            analysis={aiAnalysis}
+            isLoading={isAnalyzing}
+          />
+        </>
       )}
     </div>
   );
