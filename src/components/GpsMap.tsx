@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { MapContainer, TileLayer, useMap, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import type { GpsData, TimeframeType } from '@/types/map';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -8,6 +8,7 @@ import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import HeatmapLegend from './map/HeatmapLegend';
 import { generateHeatmapPoints, getHeatmapGradient } from '@/utils/heatmapUtils';
+import { Marker, Popup } from 'react-leaflet';
 
 const DefaultIcon = L.icon({
   iconUrl: icon,
@@ -47,41 +48,43 @@ const HeatmapLayer = ({ points, gradient }: { points: [number, number, number][]
   return null;
 };
 
+const Markers = ({ data }: { data: GpsData[] }) => {
+  return (
+    <>
+      {data
+        .filter(entry => entry?.latitude && entry?.longitude)
+        .map((entry, index) => {
+          const position: [number, number] = [entry.latitude, entry.longitude];
+          return (
+            <Marker 
+              key={`marker-${index}`}
+              position={position}
+            >
+              <Popup>
+                <div>
+                  <h2>Data Point</h2>
+                  <p>Latitude: {entry.latitude}</p>
+                  <p>Longitude: {entry.longitude}</p>
+                  <p>Altitude: {entry.altitude} m</p>
+                  <p>HDOP: {entry.hdop}</p>
+                  <p>Temperature: {entry.temperature} °C</p>
+                  <p>pH: {entry.ph}</p>
+                  <p>Dissolved Solids: {entry.dissolvedsolids} mg/L</p>
+                  <p>Timestamp: {entry.timestamp}</p>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+    </>
+  );
+};
+
 const MapContent = ({ data, points, gradient }: { 
   data: GpsData[]; 
   points: [number, number, number][]; 
   gradient: Record<string, string>; 
 }) => {
-  const markers = useMemo(() => {
-    if (!Array.isArray(data)) return [];
-    
-    return data
-      .filter(entry => entry?.latitude && entry?.longitude)
-      .map((entry, index) => {
-        const position: [number, number] = [entry.latitude, entry.longitude];
-        return (
-          <Marker 
-            key={`marker-${index}`}
-            position={position}
-          >
-            <Popup>
-              <div>
-                <h2>Data Point</h2>
-                <p>Latitude: {entry.latitude}</p>
-                <p>Longitude: {entry.longitude}</p>
-                <p>Altitude: {entry.altitude} m</p>
-                <p>HDOP: {entry.hdop}</p>
-                <p>Temperature: {entry.temperature} °C</p>
-                <p>pH: {entry.ph}</p>
-                <p>Dissolved Solids: {entry.dissolvedsolids} mg/L</p>
-                <p>Timestamp: {entry.timestamp}</p>
-              </div>
-            </Popup>
-          </Marker>
-        );
-      });
-  }, [data]);
-
   return (
     <>
       <TileLayer
@@ -89,7 +92,7 @@ const MapContent = ({ data, points, gradient }: {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
       <HeatmapLayer points={points} gradient={gradient} />
-      {markers}
+      <Markers data={data} />
     </>
   );
 };
