@@ -46,7 +46,7 @@ const GpsMap = ({ data, timeframe }: GpsMapProps) => {
           points={generateHeatmapPoints(timeframe)}
           gradient={getHeatmapGradient(timeframe)}
         />
-        {data?.map((entry, index) => {
+        {Array.isArray(data) && data.map((entry, index) => {
           if (!entry.latitude || !entry.longitude) return null;
           const position: [number, number] = [entry.latitude, entry.longitude];
           return (

@@ -25,6 +25,7 @@
     "@tensorflow/tfjs": "^4.22.0",
     "@types/leaflet": "^1.9.15",
     "@vitejs/plugin-react-swc": "^3.7.2",
+    "autoprefixer": "^10.4.20",
     "leaflet": "^1.9.4",
     "leaflet.heat": "^0.2.0",
     "npyjs": "^0.6.0",

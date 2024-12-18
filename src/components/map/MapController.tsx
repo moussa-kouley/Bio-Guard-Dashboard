@@ -11,6 +11,8 @@ const MapController = ({ center, zoom }: MapControllerProps) => {
   const map = useMap();
   
   useEffect(() => {
+    if (!map) return;
+    
     map.setView(center, zoom);
   }, [map, center, zoom]);
   
